@@ -24,13 +24,13 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-2xl font-bold text-slate-900">🚌 全港巴士脫班及服務統計系統</h1>
                     <span id="routes-loader-status" class="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 載入全港路線中...
+                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 重新整理全港路線中...
                     </span>
                     <span id="sync-status" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Firebase 雲端實時同步中
                     </span>
                 </div>
-                <p class="text-slate-500 text-sm mt-1">已解除路線顯示數量限制，全港所有路線（九巴、城巴、嶼巴）完整顯示！支援管理員帳號權限管理。</p>
+                <p class="text-slate-500 text-sm mt-1">已修復同號碼不同公司路線混淆問題（獨立區分九巴、城巴、嶼巴）。支援管理員權限管理。</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
@@ -61,8 +61,8 @@
                         
                         <!-- Route Search Box -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">搜尋並選擇路線 (全港路線完整顯示) *</label>
-                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 88K, E33, A21, B2) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">搜尋並選擇路線 (各公司獨立顯示) *</label>
+                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 88K, 1, 68X) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
                             
                             <select id="rec-route" required onchange="onSelectRouteChanged()" size="6" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none overflow-y-auto">
                                 <option value="">-- 載入全港路線中 --</option>
@@ -189,7 +189,7 @@
         </div>
     </div>
 
-    <!-- Auth Modal (Email + 密碼 註冊 / 登入彈窗) -->
+    <!-- Auth Modal -->
     <div id="auth-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
@@ -223,7 +223,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal (後加及修改跟進視窗) -->
+    <!-- Edit Modal -->
     <div id="edit-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 border border-slate-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -306,7 +306,6 @@
             onSnapshot 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 你的真實 Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBF9gb3EZPsHWG06JuibTXYwbd93mkmDWA",
             authDomain: "bus-tracker-4f6c9.firebaseapp.com",
@@ -318,8 +317,6 @@
         };
 
         const appId = 'bus-tracker-hk-app';
-
-        // 👑 【管理員設定】請將這裡的 Email 改為你自己的登入 Email！
         const ADMIN_EMAIL = "lp785at88k@gmail.com"; 
 
         const app = initializeApp(firebaseConfig);
@@ -329,7 +326,7 @@
         window.allHkRoutes = [];
         window.activeTabs = JSON.parse(localStorage.getItem('hk_bus_active_tabs')) || [];
         window.records = [];
-        window.activeRouteNumber = localStorage.getItem('hk_bus_active_route_num') || null;
+        window.activeRouteId = localStorage.getItem('hk_bus_active_route_id') || null;
         window.currentUser = null;
         window.isAuthLoginMode = true;
 
@@ -377,15 +374,15 @@
                 });
 
                 window.records.forEach(rec => {
-                    if (rec.routeNumber && !window.activeTabs.some(t => t.number === rec.routeNumber)) {
-                        const matched = window.allHkRoutes.find(r => r.number === rec.routeNumber);
+                    if (rec.routeId && !window.activeTabs.some(t => t.id === rec.routeId)) {
+                        const matched = window.allHkRoutes.find(r => r.id === rec.routeId);
                         if (matched) window.activeTabs.push(matched);
-                        else window.activeTabs.push({ number: rec.routeNumber, companyName: rec.companyName || '巴士', start: '起始', end: '終點' });
+                        else window.activeTabs.push({ id: rec.routeId, number: rec.routeNumber, companyName: rec.companyName || '巴士', start: '起始', end: '終點' });
                     }
                 });
 
-                if (!window.activeRouteNumber && window.activeTabs.length > 0) {
-                    window.activeRouteNumber = window.activeTabs[0].number;
+                if (!window.activeRouteId && window.activeTabs.length > 0) {
+                    window.activeRouteId = window.activeTabs[0].id;
                 }
 
                 window.renderRouteTabs();
@@ -430,7 +427,7 @@
             }
 
             const routeId = document.getElementById('rec-route').value;
-            const routeObj = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            const routeObj = window.allHkRoutes.find(r => r.id === routeId);
             if (!routeObj) return alert('請先選擇路線！');
 
             const btn = document.getElementById('btn-sub-record');
@@ -439,6 +436,7 @@
 
             try {
                 await addDoc(recordsRef, {
+                    routeId: routeObj.id,
                     routeNumber: routeObj.number,
                     companyName: routeObj.companyName,
                     date: document.getElementById('rec-date').value,
@@ -455,13 +453,13 @@
                     createdAt: Date.now()
                 });
 
-                window.activeRouteNumber = routeObj.number;
-                if (!window.activeTabs.some(t => t.number === routeObj.number)) {
+                window.activeRouteId = routeObj.id;
+                if (!window.activeTabs.some(t => t.id === routeObj.id)) {
                     window.activeTabs.push(routeObj);
                 }
 
                 localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
-                localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
+                localStorage.setItem('hk_bus_active_route_id', window.activeRouteId);
 
                 document.getElementById('rec-reply').value = '';
                 document.getElementById('rec-actual').value = '';
@@ -475,7 +473,7 @@
 
         window.handleUpdateRecord = async function(e) {
             e.preventDefault();
-            if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
+            if (!window.currentUser || window.currentUser.isAnonymous) return alert('Please login!');
 
             const recId = document.getElementById('edit-rec-id').value;
             const rec = window.records.find(r => r.id === recId);
@@ -508,7 +506,7 @@
         };
 
         window.deleteRecord = async function(recId) {
-            if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
+            if (!window.currentUser || window.currentUser.isAnonymous) return alert('Please login!');
 
             const rec = window.records.find(r => r.id === recId);
             const isAdmin = window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
@@ -527,7 +525,7 @@
         };
     </script>
 
-    <!-- UI Helpers & Full HK Bus Loader (No Limits on Route Display) -->
+    <!-- UI Helpers & Strict Independent Company Route Loader -->
     <script>
         window.onload = async function() {
             document.getElementById('rec-date').value = new Date().toISOString().split('T')[0];
@@ -557,11 +555,11 @@
             else unameField.classList.remove('hidden');
         }
 
-        // Full HK Bus Loader (KMB, Citybus, NLB - Without display limits)
+        // Independent Company Route Loader (Version v5 - Fixes cross-company route overlapping)
         async function preloadAllHkRoutes() {
             const loaderStatus = document.getElementById('routes-loader-status');
             
-            const cachedMaster = localStorage.getItem('hk_master_routes_cache_v4');
+            const cachedMaster = localStorage.getItem('hk_master_routes_cache_v5');
             if (cachedMaster) {
                 window.allHkRoutes = JSON.parse(cachedMaster);
                 loaderStatus.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
@@ -577,7 +575,7 @@
                 const kmbData = await kmbRes.json();
                 if (kmbData && kmbData.data) {
                     kmbData.data.forEach(r => {
-                        rawList.push({ number: r.route, company: 'kmb', companyName: '九巴/龍運', orig: r.orig_tc, dest: r.dest_tc });
+                        rawList.push({ company: 'kmb', companyName: '九巴/龍運', number: r.route, orig: r.orig_tc, dest: r.dest_tc });
                     });
                 }
 
@@ -586,7 +584,7 @@
                 const ctbData = await ctbRes.json();
                 if (ctbData && ctbData.data) {
                     ctbData.data.forEach(r => {
-                        rawList.push({ number: r.route, company: 'ctb', companyName: '城巴', orig: r.orig_tc, dest: r.dest_tc });
+                        rawList.push({ company: 'ctb', companyName: '城巴', number: r.route, orig: r.orig_tc, dest: r.dest_tc });
                     });
                 }
 
@@ -596,16 +594,22 @@
                 if (nlbData && nlbData.routes) {
                     nlbData.routes.forEach(r => {
                         const parts = (r.routeName_c || '').split(' > ');
-                        rawList.push({ number: r.routeNo, company: 'nlb', companyName: '嶼巴', orig: parts[0] || '起始', dest: parts[1] || '終點' });
+                        rawList.push({ company: 'nlb', companyName: '嶼巴', number: r.routeNo, orig: parts[0] || '起始', dest: parts[1] || '終點' });
                     });
                 }
 
-                // Deduplicate & 2-in-1 merge outbound and inbound
+                // Deduplicate & strictly separate by Company + Route Number + Terminals
                 const routeMap = new Map();
                 rawList.forEach(r => {
                     const key = `${r.company}_${r.number}`;
                     if (!routeMap.has(key)) {
-                        routeMap.set(key, { id: key, number: r.number, company: r.company, companyName: r.companyName, terminals: [r.orig, r.dest].filter(Boolean) });
+                        routeMap.set(key, { 
+                            id: key, 
+                            company: r.company, 
+                            companyName: r.companyName, 
+                            number: r.number, 
+                            terminals: [r.orig, r.dest].filter(Boolean) 
+                        });
                     } else {
                         const existing = routeMap.get(key);
                         if (r.orig && !existing.terminals.includes(r.orig)) existing.terminals.push(r.orig);
@@ -614,10 +618,14 @@
                 });
 
                 window.allHkRoutes = Array.from(routeMap.values()).map(r => {
-                    return { ...r, start: r.terminals[0] || '起始站', end: r.terminals[1] || r.terminals[0] || '終點站' };
+                    return { 
+                        ...r, 
+                        start: r.terminals[0] || '起始站', 
+                        end: r.terminals[1] || r.terminals[0] || '終點站' 
+                    };
                 }).sort((a,b) => a.number.localeCompare(b.number, 'en', {numeric: true}));
                 
-                localStorage.setItem('hk_master_routes_cache_v4', JSON.stringify(window.allHkRoutes));
+                localStorage.setItem('hk_master_routes_cache_v5', JSON.stringify(window.allHkRoutes));
                 loaderStatus.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
                 loaderStatus.innerHTML = `✅ 已自動整合 ${window.allHkRoutes.length} 條路線`;
             } catch (err) {
@@ -627,7 +635,6 @@
             }
         }
 
-        // Render Route Dropdown Without Any Display Limits
         function renderRouteDropdown(filterKeyword = '') {
             const selectRoute = document.getElementById('rec-route');
             selectRoute.innerHTML = '';
@@ -635,7 +642,7 @@
             
             const filtered = window.allHkRoutes.filter(r => {
                 if (!searchKey) return true;
-                return r.number.toUpperCase().includes(searchKey) || r.start.includes(searchKey) || r.end.includes(searchKey);
+                return r.number.toUpperCase().includes(searchKey) || r.start.includes(searchKey) || r.end.includes(searchKey) || r.companyName.includes(searchKey);
             });
 
             if (filtered.length === 0) {
@@ -643,7 +650,6 @@
                 return;
             }
 
-            // Unbounded display: loop through all matched filtered routes
             filtered.forEach(route => {
                 const opt = document.createElement('option');
                 opt.value = route.id;
@@ -651,8 +657,8 @@
                 selectRoute.appendChild(opt);
             });
 
-            if (window.activeRouteNumber) {
-                const matched = window.allHkRoutes.find(r => r.number === window.activeRouteNumber);
+            if (window.activeRouteId) {
+                const matched = window.allHkRoutes.find(r => r.id === window.activeRouteId);
                 if (matched) selectRoute.value = matched.id;
             }
         }
@@ -667,14 +673,14 @@
 
             const routeObj = window.allHkRoutes.find(r => r.id === routeId);
             if (routeObj) {
-                window.activeRouteNumber = routeObj.number;
-                if (!window.activeTabs.some(t => t.number === routeObj.number)) {
+                window.activeRouteId = routeObj.id;
+                if (!window.activeTabs.some(t => t.id === routeObj.id)) {
                     window.activeTabs.push(routeObj);
                 }
             }
 
             localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
-            localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
+            localStorage.setItem('hk_bus_active_route_id', window.activeRouteId);
 
             renderRouteTabs();
             updateDirectionOptions();
@@ -688,29 +694,29 @@
 
             if (window.activeTabs.length === 0 && window.allHkRoutes.length > 0) {
                 window.activeTabs.push(window.allHkRoutes[0]);
-                window.activeRouteNumber = window.allHkRoutes[0].number;
+                window.activeRouteId = window.allHkRoutes[0].id;
             }
 
             const delayCounts = {};
             window.records.forEach(rec => {
                 if ((rec.actual - rec.scheduled) > 0) {
-                    delayCounts[rec.routeNumber] = (delayCounts[rec.routeNumber] || 0) + 1;
+                    delayCounts[rec.routeId] = (delayCounts[rec.routeId] || 0) + 1;
                 }
             });
 
-            window.activeTabs.sort((a,b) => (delayCounts[b.number] || 0) - (delayCounts[a.number] || 0));
+            window.activeTabs.sort((a,b) => (delayCounts[b.id] || 0) - (delayCounts[a.id] || 0));
 
             window.activeTabs.forEach(route => {
-                const delays = delayCounts[route.number] || 0;
+                const delays = delayCounts[route.id] || 0;
                 const btn = document.createElement('button');
                 btn.onclick = () => {
-                    window.activeRouteNumber = route.number;
-                    localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
+                    window.activeRouteId = route.id;
+                    localStorage.setItem('hk_bus_active_route_id', window.activeRouteId);
                     renderRouteTabs();
                     renderRecords();
                 };
                 
-                const isActive = route.number === window.activeRouteNumber;
+                const isActive = route.id === window.activeRouteId;
                 btn.className = `pb-2 px-3 text-xs md:text-sm font-medium whitespace-nowrap flex items-center gap-1.5 rounded-t-lg transition ${isActive ? 'active-tab' : 'text-slate-500 hover:text-slate-800'}`;
                 btn.innerHTML = `
                     <span>${route.number} <span class="text-[11px] font-normal opacity-75">(${route.companyName || ''})</span></span>
@@ -722,7 +728,7 @@
 
         function updateDirectionOptions() {
             const routeId = document.getElementById('rec-route').value;
-            const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            const route = window.allHkRoutes.find(r => r.id === routeId || r.id === window.activeRouteId);
             const dirSelect = document.getElementById('rec-direction');
             dirSelect.innerHTML = '';
 
@@ -745,7 +751,7 @@
 
         async function loadStopsForRecord() {
             const routeId = document.getElementById('rec-route').value;
-            const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            const route = window.allHkRoutes.find(r => r.id === routeId || r.id === window.activeRouteId);
             const stopSelect = document.getElementById('rec-stop');
             stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
 
@@ -784,7 +790,7 @@
             
             tbody.innerHTML = '';
 
-            const activeRoute = window.allHkRoutes.find(r => r.number === window.activeRouteNumber) || window.activeTabs[0];
+            const activeRoute = window.allHkRoutes.find(r => r.id === window.activeRouteId) || window.activeTabs[0];
             if (!activeRoute) {
                 infoDisplay.innerHTML = '請在左側搜尋並選擇路線';
                 emptyState.classList.add('hidden');
@@ -793,7 +799,7 @@
 
             infoDisplay.innerHTML = `<span class="bg-sky-100 text-sky-800 px-2 py-0.5 rounded text-xs mr-2 font-bold">${activeRoute.number} (${activeRoute.companyName || '巴士'})</span> ${activeRoute.start} ↔ ${activeRoute.end}`;
 
-            const filteredRecords = window.records.filter(r => r.routeNumber === activeRoute.number)
+            const filteredRecords = window.records.filter(r => r.routeId === activeRoute.id)
                                            .sort((a,b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
 
             if (filteredRecords.length === 0) {
@@ -833,7 +839,7 @@
                     complaintBadge = `<span class="text-xs text-slate-400 mb-1 inline-block">未跟進</span>`;
                 }
 
-                const isAdmin = window.currentUser && window.currentUser.email.toLowerCase() === "your-admin-email@gmail.com".toLowerCase();
+                const isAdmin = window.currentUser && window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
                 const isMyRecord = window.currentUser && !window.currentUser.isAnonymous && (rec.uid === window.currentUser.uid || isAdmin);
 
                 tr.innerHTML = `
@@ -883,7 +889,6 @@
             document.getElementById('edit-complaint').value = rec.complaint || '否';
             document.getElementById('edit-reply').value = rec.reply || '';
 
-            document.getElementById('edit-modal').classList.add('hidden'); // Fix typo reference
             document.getElementById('edit-modal').classList.remove('hidden');
         }
 
@@ -896,8 +901,9 @@
             let fileName = '全港巴士脫班統計表_全紀錄.csv';
 
             if (scope === 'active') {
-                targetRecords = window.records.filter(r => r.routeNumber === window.activeRouteNumber);
-                fileName = `巴士脫班統計表_路線${window.activeRouteNumber || ''}.csv`;
+                const activeRoute = window.allHkRoutes.find(r => r.id === window.activeRouteId);
+                targetRecords = window.records.filter(r => r.routeId === window.activeRouteId);
+                fileName = `巴士脫班統計表_路線${activeRoute ? activeRoute.number : ''}.csv`;
             } else {
                 targetRecords = [...window.records];
             }
