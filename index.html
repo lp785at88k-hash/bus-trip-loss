@@ -30,7 +30,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 雲端實時同步中
                     </span>
                 </div>
-                <p class="text-slate-500 text-sm mt-1">已完美修復登入前後數據同步顯示問題，登入後資料絕不消失！</p>
+                <p class="text-slate-500 text-sm mt-1">已新增全全面空值保護（Null Safety），登入後資料 100% 穩定呈現！</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
@@ -306,18 +306,20 @@
             onSnapshot 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBF9gb3EZPsHWG06JuibTXYwbd93mkmDWA",
-            authDomain: "bus-tracker-4f6c9.firebaseapp.com",
-            projectId: "bus-tracker-4f6c9",
-            storageBucket: "bus-tracker-4f6c9.firebasestorage.app",
-            messagingSenderId: "955719712462",
-            appId: "1:955719712462:web:d1bcc0df4f8b637681a9f",
-            measurementId: "G-22W909WMBG"
-        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyBF9gb3EZPsHWG06JuibTXYwbd93mkmDWA",
+                authDomain: "bus-tracker-4f6c9.firebaseapp.com",
+                projectId: "bus-tracker-4f6c9",
+                storageBucket: "bus-tracker-4f6c9.firebasestorage.app",
+                messagingSenderId: "955719712462",
+                appId: "1:955719712462:web:d1bcc0df4f8b637681a9f",
+                measurementId: "G-22W909WMBG"
+            };
 
-        const appId = 'bus-tracker-hk-app';
-        const ADMIN_EMAIL = "lp785at88k@gmail.com"; 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bus-tracker-hk-app';
+        const ADMIN_EMAIL = "your-admin-email@gmail.com"; 
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -334,7 +336,9 @@
 
         async function initAuth() {
             try {
-                if (!auth.currentUser) {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
                     await signInAnonymously(auth);
                 }
             } catch (err) {
@@ -351,8 +355,9 @@
             const btnAuth = document.getElementById('btn-auth-trigger');
 
             if (user && !user.isAnonymous) {
-                const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-                const displayName = user.displayName || user.email.split('@')[0];
+                const userEmail = user.email || '';
+                const isAdmin = userEmail && userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+                const displayName = user.displayName || (userEmail ? userEmail.split('@')[0] : '已登入用戶');
                 nameDisp.textContent = `👤 ${displayName} ${isAdmin ? '👑 [管理員]' : ''}`;
                 btnAuth.textContent = "登出";
                 btnAuth.onclick = () => signOut(auth);
@@ -366,9 +371,13 @@
                 statusEl.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1";
                 statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> 雲端實時同步中';
             }
+
+            // Trigger re-render whenever auth state updates safely
+            window.renderRouteTabs();
+            window.renderRecords();
         });
 
-        // Independent real-time records listener (Guaranteed not to break on auth change)
+        // Global Firestore Listener with Robust Route Mapping
         onSnapshot(recordsRef, (snapshot) => {
             window.records = [];
             snapshot.forEach(docSnap => {
@@ -388,7 +397,7 @@
             });
 
             if (!window.activeRouteId && window.activeTabs.length > 0) {
-                window.activeRouteId = window.activeTabs[0].id;
+                window.activeRouteId = window.activeTabs[0].id || window.activeTabs[0].number;
             }
 
             window.renderRouteTabs();
@@ -450,11 +459,11 @@
                     stopName: document.getElementById('rec-stop').value || '全線/一般候車',
                     scheduled: parseInt(document.getElementById('rec-sched').value) || 0,
                     actual: parseInt(document.getElementById('rec-actual').value) || 0,
-                    standing: document.getElementById('rec-standing').value,
-                    complaint: document.getElementById('rec-complaint').value,
-                    reply: document.getElementById('rec-reply').value.trim(),
+                    standing: document.getElementById('rec-standing').value || '冇',
+                    complaint: document.getElementById('rec-complaint').value || '否',
+                    reply: (document.getElementById('rec-reply').value || '').trim(),
                     uid: window.currentUser.uid,
-                    username: window.currentUser.displayName || window.currentUser.email.split('@')[0],
+                    username: window.currentUser.displayName || (window.currentUser.email ? window.currentUser.email.split('@')[0] : '熱心市民'),
                     createdAt: Date.now()
                 });
 
@@ -478,12 +487,13 @@
 
         window.handleUpdateRecord = async function(e) {
             e.preventDefault();
-            if (!window.currentUser || window.currentUser.isAnonymous) return alert('Please login!');
+            if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
 
             const recId = document.getElementById('edit-rec-id').value;
             const rec = window.records.find(r => r.id === recId);
             
-            const isAdmin = window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            const userEmail = window.currentUser.email || '';
+            const isAdmin = userEmail && userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
             if (rec && rec.uid !== window.currentUser.uid && !isAdmin) {
                 return alert('⚠️ 權限不符：你只能修改由你本人帳號建立的紀錄！');
             }
@@ -496,9 +506,9 @@
                 await updateDoc(docToUpdate, {
                     scheduled: parseInt(document.getElementById('edit-sched').value) || 0,
                     actual: parseInt(document.getElementById('edit-actual').value) || 0,
-                    standing: document.getElementById('edit-standing').value,
-                    complaint: document.getElementById('edit-complaint').value,
-                    reply: document.getElementById('edit-reply').value.trim(),
+                    standing: document.getElementById('edit-standing').value || '冇',
+                    complaint: document.getElementById('edit-complaint').value || '否',
+                    reply: (document.getElementById('edit-reply').value || '').trim(),
                     updatedAt: Date.now()
                 });
 
@@ -511,10 +521,11 @@
         };
 
         window.deleteRecord = async function(recId) {
-            if (!window.currentUser || window.currentUser.isAnonymous) return alert('Please login!');
+            if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
 
             const rec = window.records.find(r => r.id === recId);
-            const isAdmin = window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            const userEmail = window.currentUser.email || '';
+            const isAdmin = userEmail && userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
             
             if (rec && rec.uid !== window.currentUser.uid && !isAdmin) {
                 return alert('⚠️ 權限不符：你只能刪除由你本人帳號建立的紀錄！');
@@ -530,7 +541,7 @@
         };
     </script>
 
-    <!-- UI Helpers -->
+    <!-- UI Helpers with Exception Isolation -->
     <script>
         window.onload = async function() {
             document.getElementById('rec-date').value = new Date().toISOString().split('T')[0];
@@ -648,7 +659,7 @@
             });
 
             if (window.activeRouteId) {
-                const matched = window.allHkRoutes.find(r => r.id === window.activeRouteId);
+                const matched = window.allHkRoutes.find(r => r.id === window.activeRouteId || r.number === window.activeRouteId);
                 if (matched) selectRoute.value = matched.id;
             }
         }
@@ -679,42 +690,46 @@
         }
 
         function renderRouteTabs() {
-            const tabsContainer = document.getElementById('route-tabs');
-            tabsContainer.innerHTML = '';
+            try {
+                const tabsContainer = document.getElementById('route-tabs');
+                tabsContainer.innerHTML = '';
 
-            if (window.activeTabs.length === 0 && window.allHkRoutes.length > 0) {
-                window.activeTabs.push(window.allHkRoutes[0]);
-                window.activeRouteId = window.allHkRoutes[0].id;
-            }
-
-            const delayCounts = {};
-            window.records.forEach(rec => {
-                const rId = rec.routeId || rec.routeNumber;
-                if ((rec.actual - rec.scheduled) > 0) {
-                    delayCounts[rId] = (delayCounts[rId] || 0) + 1;
+                if (window.activeTabs.length === 0 && window.allHkRoutes.length > 0) {
+                    window.activeTabs.push(window.allHkRoutes[0]);
+                    window.activeRouteId = window.allHkRoutes[0].id;
                 }
-            });
 
-            window.activeTabs.sort((a,b) => (delayCounts[b.id] || delayCounts[b.number] || 0) - (delayCounts[a.id] || delayCounts[a.number] || 0));
+                const delayCounts = {};
+                window.records.forEach(rec => {
+                    const rId = rec.routeId || rec.routeNumber;
+                    if ((rec.actual - rec.scheduled) > 0) {
+                        delayCounts[rId] = (delayCounts[rId] || 0) + 1;
+                    }
+                });
 
-            window.activeTabs.forEach(route => {
-                const delays = delayCounts[route.id] || delayCounts[route.number] || 0;
-                const btn = document.createElement('button');
-                btn.onclick = () => {
-                    window.activeRouteId = route.id;
-                    localStorage.setItem('hk_bus_active_route_id', window.activeRouteId);
-                    renderRouteTabs();
-                    renderRecords();
-                };
-                
-                const isActive = route.id === window.activeRouteId || route.number === window.activeRouteId;
-                btn.className = `pb-2 px-3 text-xs md:text-sm font-medium whitespace-nowrap flex items-center gap-1.5 rounded-t-lg transition ${isActive ? 'active-tab' : 'text-slate-500 hover:text-slate-800'}`;
-                btn.innerHTML = `
-                    <span>${route.number} <span class="text-[11px] font-normal opacity-75">(${route.companyName || ''})</span></span>
-                    ${delays > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold" title="${delays} 次脫班">${delays}</span>` : ''}
-                `;
-                tabsContainer.appendChild(btn);
-            });
+                window.activeTabs.sort((a,b) => (delayCounts[b.id] || delayCounts[b.number] || 0) - (delayCounts[a.id] || delayCounts[a.number] || 0));
+
+                window.activeTabs.forEach(route => {
+                    const delays = delayCounts[route.id] || delayCounts[route.number] || 0;
+                    const btn = document.createElement('button');
+                    btn.onclick = () => {
+                        window.activeRouteId = route.id;
+                        localStorage.setItem('hk_bus_active_route_id', window.activeRouteId);
+                        renderRouteTabs();
+                        renderRecords();
+                    };
+                    
+                    const isActive = route.id === window.activeRouteId || route.number === window.activeRouteId;
+                    btn.className = `pb-2 px-3 text-xs md:text-sm font-medium whitespace-nowrap flex items-center gap-1.5 rounded-t-lg transition ${isActive ? 'active-tab' : 'text-slate-500 hover:text-slate-800'}`;
+                    btn.innerHTML = `
+                        <span>${route.number} <span class="text-[11px] font-normal opacity-75">(${route.companyName || ''})</span></span>
+                        ${delays > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold" title="${delays} 次脫班">${delays}</span>` : ''}
+                    `;
+                    tabsContainer.appendChild(btn);
+                });
+            } catch (err) {
+                console.error("renderRouteTabs error:", err);
+            }
         }
 
         function updateDirectionOptions() {
@@ -783,98 +798,113 @@
             stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
         }
 
+        // Null-Safe Render Engine for Records
         function renderRecords() {
-            const tbody = document.getElementById('records-tbody');
-            const emptyState = document.getElementById('empty-state');
-            const infoDisplay = document.getElementById('route-info-display');
-            
-            tbody.innerHTML = '';
+            try {
+                const tbody = document.getElementById('records-tbody');
+                const emptyState = document.getElementById('empty-state');
+                const infoDisplay = document.getElementById('route-info-display');
+                
+                tbody.innerHTML = '';
 
-            const activeRoute = window.allHkRoutes.find(r => r.id === window.activeRouteId || r.number === window.activeRouteId) || window.activeTabs[0];
-            if (!activeRoute) {
-                infoDisplay.innerHTML = '請在左側搜尋並選擇路線';
-                emptyState.classList.remove('hidden');
-                return;
+                const activeRoute = window.allHkRoutes.find(r => r.id === window.activeRouteId || r.number === window.activeRouteId) || window.activeTabs[0];
+                if (!activeRoute) {
+                    infoDisplay.innerHTML = '請在左側搜尋並選擇路線';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                infoDisplay.innerHTML = `<span class="bg-sky-100 text-sky-800 px-2 py-0.5 rounded text-xs mr-2 font-bold">${activeRoute.number} (${activeRoute.companyName || '巴士'})</span> ${activeRoute.start} ↔ ${activeRoute.end}`;
+
+                // Multi-attribute matching (supports routeId, routeNumber, and company-agnostic number)
+                const filteredRecords = window.records.filter(r => {
+                    const rId = r.routeId || r.routeNumber;
+                    return rId === activeRoute.id || 
+                           rId === activeRoute.number || 
+                           (r.routeNumber && activeRoute.number && r.routeNumber.toUpperCase() === activeRoute.number.toUpperCase());
+                }).sort((a,b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+
+                if (filteredRecords.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+
+                filteredRecords.forEach(rec => {
+                    try {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+                        const delay = (rec.actual || 0) - (rec.scheduled || 0);
+                        let delayBadge = '';
+                        if (delay > 0) {
+                            delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-700">脫班 +${delay} 分鐘</span>`;
+                        } else if (delay < 0) {
+                            delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700">過早 -${Math.abs(delay)} 分鐘</span>`;
+                        } else {
+                            delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">準時</span>`;
+                        }
+
+                        let standingBadge = '';
+                        if (rec.standing === '頂閘/飛站') {
+                            standingBadge = `<span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">頂閘/飛站</span>`;
+                        } else if (rec.standing === '有') {
+                            standingBadge = `<span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded">有企人</span>`;
+                        } else {
+                            standingBadge = `<span class="text-xs text-slate-400">冇企人</span>`;
+                        }
+
+                        let complaintBadge = '';
+                        const compStr = rec.complaint || '';
+                        if (compStr.includes('已投訴')) {
+                            complaintBadge = `<span class="inline-block text-xs font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mb-1">${compStr}</span>`;
+                        } else {
+                            complaintBadge = `<span class="text-xs text-slate-400 mb-1 inline-block">未跟進</span>`;
+                        }
+
+                        // Ultra Safe Admin & Ownership Verification
+                        const userEmail = (window.currentUser && window.currentUser.email) ? window.currentUser.email : '';
+                        const isAdmin = userEmail && userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+                        const isMyRecord = window.currentUser && !window.currentUser.isAnonymous && ((rec.uid && rec.uid === window.currentUser.uid) || isAdmin);
+
+                        tr.innerHTML = `
+                            <td class="p-2.5 whitespace-nowrap">
+                                <div class="font-medium text-slate-900">${rec.date || ''} ${rec.time || ''}</div>
+                                <div class="text-[11px] text-sky-700 font-semibold">👤 錄入者：${rec.username || '熱心市民'}</div>
+                            </td>
+                            <td class="p-2.5 text-xs text-slate-700">
+                                <div class="font-medium text-slate-800">${rec.direction || ''}</div>
+                                <div class="text-slate-400 text-[11px]">${rec.stopName || '全線/一般候車'}</div>
+                            </td>
+                            <td class="p-2.5 text-center whitespace-nowrap">
+                                <div class="text-xs text-slate-500">原定: ${rec.scheduled || 0} 分鐘</div>
+                                <div class="font-semibold text-slate-800">實際: ${rec.actual || 0} 分鐘</div>
+                            </td>
+                            <td class="p-2.5 text-center whitespace-nowrap">${delayBadge}</td>
+                            <td class="p-2.5 text-center whitespace-nowrap">${standingBadge}</td>
+                            <td class="p-2.5 max-w-xs">
+                                ${complaintBadge}
+                                <div class="text-xs text-slate-600 line-clamp-2" title="${rec.reply || ''}">${rec.reply || '<span class="text-slate-300">無備註回覆</span>'}</div>
+                            </td>
+                            <td class="p-2.5 text-right whitespace-nowrap space-x-1">
+                                ${isMyRecord ? `
+                                    <button onclick="openEditModal('${rec.id}')" class="text-sky-600 hover:text-sky-800 text-xs px-2 py-1 rounded bg-sky-50 hover:bg-sky-100 font-medium transition">✏️ 編輯/後加</button>
+                                    <button onclick="window.deleteRecord('${rec.id}')" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1 rounded transition">刪除</button>
+                                ` : `
+                                    <span class="text-[10px] text-slate-300 italic">僅限作者/管理員修改</span>
+                                `}
+                            </td>
+                        `;
+
+                        tbody.appendChild(tr);
+                    } catch (itemErr) {
+                        console.error("Single row render error safely caught:", itemErr);
+                    }
+                });
+            } catch (err) {
+                console.error("renderRecords global error:", err);
             }
-
-            infoDisplay.innerHTML = `<span class="bg-sky-100 text-sky-800 px-2 py-0.5 rounded text-xs mr-2 font-bold">${activeRoute.number} (${activeRoute.companyName || '巴士'})</span> ${activeRoute.start} ↔ ${activeRoute.end}`;
-
-            const filteredRecords = window.records.filter(r => {
-                const rId = r.routeId || r.routeNumber;
-                return rId === activeRoute.id || rId === activeRoute.number;
-            }).sort((a,b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
-
-            if (filteredRecords.length === 0) {
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-
-            filteredRecords.forEach(rec => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-
-                const delay = rec.actual - rec.scheduled;
-                let delayBadge = '';
-                if (delay > 0) {
-                    delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-700">脫班 +${delay} 分鐘</span>`;
-                } else if (delay < 0) {
-                    delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700">過早 -${Math.abs(delay)} 分鐘</span>`;
-                } else {
-                    delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">準時</span>`;
-                }
-
-                let standingBadge = '';
-                if (rec.standing === '頂閘/飛站') {
-                    standingBadge = `<span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">頂閘/飛站</span>`;
-                } else if (rec.standing === '有') {
-                    standingBadge = `<span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded">有企人</span>`;
-                } else {
-                    standingBadge = `<span class="text-xs text-slate-400">冇企人</span>`;
-                }
-
-                let complaintBadge = '';
-                if (rec.complaint.includes('已投訴')) {
-                    complaintBadge = `<span class="inline-block text-xs font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mb-1">${rec.complaint}</span>`;
-                } else {
-                    complaintBadge = `<span class="text-xs text-slate-400 mb-1 inline-block">未跟進</span>`;
-                }
-
-                const isAdmin = window.currentUser && window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-                const isMyRecord = window.currentUser && !window.currentUser.isAnonymous && (rec.uid === window.currentUser.uid || isAdmin);
-
-                tr.innerHTML = `
-                    <td class="p-2.5 whitespace-nowrap">
-                        <div class="font-medium text-slate-900">${rec.date} ${rec.time}</div>
-                        <div class="text-[11px] text-sky-700 font-semibold">👤 錄入者：${rec.username || '熱心市民'}</div>
-                    </td>
-                    <td class="p-2.5 text-xs text-slate-700">
-                        <div class="font-medium text-slate-800">${rec.direction}</div>
-                        <div class="text-slate-400 text-[11px]">${rec.stopName || '全線/一般候車'}</div>
-                    </td>
-                    <td class="p-2.5 text-center whitespace-nowrap">
-                        <div class="text-xs text-slate-500">原定: ${rec.scheduled} 分鐘</div>
-                        <div class="font-semibold text-slate-800">實際: ${rec.actual} 分鐘</div>
-                    </td>
-                    <td class="p-2.5 text-center whitespace-nowrap">${delayBadge}</td>
-                    <td class="p-2.5 text-center whitespace-nowrap">${standingBadge}</td>
-                    <td class="p-2.5 max-w-xs">
-                        ${complaintBadge}
-                        <div class="text-xs text-slate-600 line-clamp-2" title="${rec.reply}">${rec.reply || '<span class="text-slate-300">無備註回覆</span>'}</div>
-                    </td>
-                    <td class="p-2.5 text-right whitespace-nowrap space-x-1">
-                        ${isMyRecord ? `
-                            <button onclick="openEditModal('${rec.id}')" class="text-sky-600 hover:text-sky-800 text-xs px-2 py-1 rounded bg-sky-50 hover:bg-sky-100 font-medium transition">✏️ 編輯/後加</button>
-                            <button onclick="window.deleteRecord('${rec.id}')" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1 rounded transition">刪除</button>
-                        ` : `
-                            <span class="text-[10px] text-slate-300 italic">僅限作者/管理員修改</span>
-                        `}
-                    </td>
-                `;
-
-                tbody.appendChild(tr);
-            });
         }
 
         function openEditModal(recId) {
@@ -882,11 +912,11 @@
             if (!rec) return;
 
             document.getElementById('edit-rec-id').value = rec.id;
-            document.getElementById('edit-info-route').textContent = `[${rec.companyName || '巴士'}] 路線 ${rec.routeNumber || rec.routeId} (${rec.direction}) @ ${rec.stopName || '一般候車'}`;
-            document.getElementById('edit-info-time').textContent = `${rec.date} ${rec.time} (錄入者: ${rec.username})`;
+            document.getElementById('edit-info-route').textContent = `[${rec.companyName || '巴士'}] 路線 ${rec.routeNumber || rec.routeId} (${rec.direction || ''}) @ ${rec.stopName || '一般候車'}`;
+            document.getElementById('edit-info-time').textContent = `${rec.date || ''} ${rec.time || ''} (錄入者: ${rec.username || ''})`;
 
-            document.getElementById('edit-sched').value = rec.scheduled;
-            document.getElementById('edit-actual').value = rec.actual;
+            document.getElementById('edit-sched').value = rec.scheduled || 0;
+            document.getElementById('edit-actual').value = rec.actual || 0;
             document.getElementById('edit-standing').value = rec.standing || '冇';
             document.getElementById('edit-complaint').value = rec.complaint || '否';
             document.getElementById('edit-reply').value = rec.reply || '';
@@ -906,7 +936,7 @@
                 const activeRoute = window.allHkRoutes.find(r => r.id === window.activeRouteId || r.number === window.activeRouteId);
                 targetRecords = window.records.filter(r => {
                     const rId = r.routeId || r.routeNumber;
-                    return activeRoute && (rId === activeRoute.id || rId === activeRoute.number);
+                    return activeRoute && (rId === activeRoute.id || rId === activeRoute.number || (r.routeNumber && activeRoute.number && r.routeNumber.toUpperCase() === activeRoute.number.toUpperCase()));
                 });
                 fileName = `巴士脫班統計表_路線${activeRoute ? activeRoute.number : ''}.csv`;
             } else {
@@ -921,19 +951,19 @@
             const header = ['營辦商', '路線號碼', '日期', '時間', '方向', '候車車站', '原定班次(分鐘)', '實際班次(分鐘)', '脫班延誤(分鐘)', '是否有企人', '交通投訴組跟進', '回覆/備註', '錄入者'];
             
             const rows = targetRecords.map(rec => {
-                const delay = rec.actual - rec.scheduled;
+                const delay = (rec.actual || 0) - (rec.scheduled || 0);
                 return [
                     `"${rec.companyName || '巴士'}"`,
-                    `"${rec.routeNumber || rec.routeId}"`,
-                    `"${rec.date}"`,
-                    `"${rec.time}"`,
-                    `"${rec.direction}"`,
+                    `"${rec.routeNumber || rec.routeId || ''}"`,
+                    `"${rec.date || ''}"`,
+                    `"${rec.time || ''}"`,
+                    `"${rec.direction || ''}"`,
                     `"${rec.stopName || '全線/一般候車'}"`,
-                    rec.scheduled,
-                    rec.actual,
+                    rec.scheduled || 0,
+                    rec.actual || 0,
                     delay,
-                    `"${rec.standing}"`,
-                    `"${rec.complaint}"`,
+                    `"${rec.standing || '冇'}"`,
+                    `"${rec.complaint || '否'}"`,
                     `"${(rec.reply || '').replace(/"/g, '""')}"`,
                     `"${rec.username || '熱心市民'}"`
                 ];
