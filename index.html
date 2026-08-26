@@ -24,13 +24,13 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-2xl font-bold text-slate-900">🚌 全港巴士脫班及服務統計系統</h1>
                     <span id="routes-loader-status" class="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 正在載入九巴、城巴、嶼巴...
+                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 載入全港路線中...
                     </span>
                     <span id="sync-status" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Firebase 雲端實時同步中
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 雲端實時同步中
                     </span>
                 </div>
-                <p class="text-slate-500 text-sm mt-1">已成功修正城巴 API 接口，九巴、城巴、嶼巴全線路線已完美載入！支援管理員帳號與防破壞機制。</p>
+                <p class="text-slate-500 text-sm mt-1">已解鎖全線站點顯示（完整顯示所有中途站），並完美支援九巴、城巴及聯營線（如 948、102 等）！</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
@@ -61,8 +61,8 @@
                         
                         <!-- Route Search Box -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">搜尋並選擇路線 (九巴/城巴/嶼巴已全面支援) *</label>
-                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 88K, E33, A21, B2) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">搜尋並選擇路線 (支援聯營、過海線) *</label>
+                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 948, 88K, 102) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
                             
                             <select id="rec-route" required onchange="onSelectRouteChanged()" size="5" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none overflow-y-auto">
                                 <option value="">-- 載入全港路線中 --</option>
@@ -87,9 +87,9 @@
                             </select>
                         </div>
 
-                        <!-- Specific Stop Selection -->
+                        <!-- Specific Stop Selection (Full stops unlocked) -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">候車 / 發生地點 (車站名稱)</label>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">候車 / 發生地點 (完整車站名稱)</label>
                             <select id="rec-stop" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
                                 <option value="全線/一般候車">全線/一般候車</option>
                             </select>
@@ -318,9 +318,7 @@
         };
 
         const appId = 'bus-tracker-hk-app';
-
-        // 👑 【管理員設定】請確保這裡填入你自己的真實登入 Email！
-        const ADMIN_EMAIL = "lp785at88k@gmail.com"; 
+        const ADMIN_EMAIL = "lp785at88k@gmail.com"; // 記得改成你的 Admin Email
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -527,7 +525,7 @@
         };
     </script>
 
-    <!-- UI Helpers & Full HK Bus Loader (KMB, CTB, NLB) -->
+    <!-- UI Helpers & Full HK Bus Loader (KMB, CTB, NLB) with Full Stops Unlocked -->
     <script>
         window.onload = async function() {
             document.getElementById('rec-date').value = new Date().toISOString().split('T')[0];
@@ -557,7 +555,7 @@
             else unameField.classList.remove('hidden');
         }
 
-        // Full HK Bus Loader (KMB, Citybus with fixed URL, NLB)
+        // Full HK Bus Loader (KMB, Citybus, NLB) with Joint Venture Support
         async function preloadAllHkRoutes() {
             const loaderStatus = document.getElementById('routes-loader-status');
             
@@ -581,8 +579,8 @@
                     });
                 }
 
-                // 2. Citybus (CTB) - Fixed API Endpoint v2
-                const ctbRes = await fetch('https://rt.data.gov.hk/v2/transport/citybus/route/ctb');
+                // 2. Citybus (CTB)
+                const ctbRes = await fetch('https://data.etabus.gov.hk/v1/transport/citybus-nwfb/route/ctb');
                 const ctbData = await ctbRes.json();
                 if (ctbData && ctbData.data) {
                     ctbData.data.forEach(r => {
@@ -600,14 +598,23 @@
                     });
                 }
 
-                // Deduplicate & 2-in-1 merge outbound and inbound
+                // Deduplicate & 2-in-1 merge with Joint-Venture (聯營線) support
                 const routeMap = new Map();
                 rawList.forEach(r => {
-                    const key = `${r.company}_${r.number}`;
+                    const key = `${r.number}`.toUpperCase(); // Normalize by route number so joint ventures merge nicely
                     if (!routeMap.has(key)) {
-                        routeMap.set(key, { id: key, number: r.number, company: r.company, companyName: r.companyName, terminals: [r.orig, r.dest].filter(Boolean) });
+                        routeMap.set(key, { 
+                            id: `route_${r.number}`, 
+                            number: r.number, 
+                            company: r.company, 
+                            companyName: r.companyName, 
+                            terminals: [r.orig, r.dest].filter(Boolean) 
+                        });
                     } else {
                         const existing = routeMap.get(key);
+                        if (!existing.companyName.includes(r.companyName)) {
+                            existing.companyName += ` / ${r.companyName}`; // e.g. 九巴/龍運 / 城巴 (聯營線)
+                        }
                         if (r.orig && !existing.terminals.includes(r.orig)) existing.terminals.push(r.orig);
                         if (r.dest && !existing.terminals.includes(r.dest)) existing.terminals.push(r.dest);
                     }
@@ -741,37 +748,60 @@
             dirSelect.appendChild(opt2);
         }
 
+        // Unlocked Full Stops Loader supporting Joint-Venture & CTB/KMB
         async function loadStopsForRecord() {
             const routeId = document.getElementById('rec-route').value;
             const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
             const stopSelect = document.getElementById('rec-stop');
-            stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
+            stopSelect.innerHTML = '<option value="全線/一般候車">載入全部車站中...</option>';
 
-            if (!route) return;
+            if (!route) {
+                stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
+                return;
+            }
 
             try {
-                if (route.company === 'kmb') {
+                let stopsList = [];
+
+                // Try KMB first if company includes kmb
+                if (route.companyName.includes('九巴')) {
                     const dirParam = document.getElementById('rec-direction').value.includes(route.end) ? 'outbound' : 'inbound';
                     const res = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${route.number}/${dirParam}/1`);
                     const data = await res.json();
-                    
                     if (data && data.data && data.data.length > 0) {
                         const stopDetails = await Promise.all(
-                            data.data.slice(0, 15).map(s => fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop/${s.stop}`).then(r => r.json()))
+                            data.data.map(s => fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop/${s.stop}`).then(r => r.json()))
                         );
-
-                        stopDetails.forEach(sDoc => {
-                            if (sDoc && sDoc.data) {
-                                const opt = document.createElement('option');
-                                opt.value = sDoc.data.name_tc;
-                                opt.textContent = sDoc.data.name_tc;
-                                stopSelect.appendChild(opt);
-                            }
-                        });
+                        stopsList = stopDetails.map(sDoc => sDoc?.data?.name_tc).filter(Boolean);
                     }
                 }
+
+                // If KMB gave nothing or it's Citybus, try CTB API
+                if (stopsList.length === 0 && route.companyName.includes('城巴')) {
+                    const dirParam = document.getElementById('rec-direction').value.includes(route.end) ? 'outbound' : 'inbound';
+                    const boundCode = dirParam === 'outbound' ? 'O' : 'I';
+                    const res = await fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/route-stop/CTB/${route.number}/${boundCode}`);
+                    const data = await res.json();
+                    if (data && data.data && data.data.length > 0) {
+                        const stopDetails = await Promise.all(
+                            data.data.map(s => fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/stop/${s.stop}`).then(r => r.json()))
+                        );
+                        stopsList = stopDetails.map(sDoc => sDoc?.data?.name_tc).filter(Boolean);
+                    }
+                }
+
+                stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
+                if (stopsList.length > 0) {
+                    stopsList.forEach(name => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = name;
+                        stopSelect.appendChild(opt);
+                    });
+                }
             } catch (err) {
-                console.log("Stops fetch fallback");
+                console.log("Full stops load fallback:", err);
+                stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
             }
         }
 
@@ -831,7 +861,7 @@
                     complaintBadge = `<span class="text-xs text-slate-400 mb-1 inline-block">未跟進</span>`;
                 }
 
-                const isAdmin = window.currentUser && window.currentUser.email.toLowerCase() === "your-admin-email@gmail.com".toLowerCase();
+                const isAdmin = window.currentUser && window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
                 const isMyRecord = window.currentUser && !window.currentUser.isAnonymous && (rec.uid === window.currentUser.uid || isAdmin);
 
                 tr.innerHTML = `
@@ -881,7 +911,7 @@
             document.getElementById('edit-complaint').value = rec.complaint || '否';
             document.getElementById('edit-reply').value = rec.reply || '';
 
-            document.getElementById('edit-modal').classList.add('hidden'); // fix
+            document.getElementById('edit-modal').classList.add('hidden'); // wait
             document.getElementById('edit-modal').classList.remove('hidden');
         }
 
@@ -921,7 +951,7 @@
                     delay,
                     `"${rec.standing}"`,
                     `"${rec.complaint}"`,
-                    `"${(rec.reply || '').replace(/"/g, 'json')}"`,
+                    `"${(rec.reply || '').replace(/"/g, '""')}"`,
                     `"${rec.username || '熱心市民'}"`
                 ];
             });
