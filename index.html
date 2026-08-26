@@ -30,7 +30,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 雲端實時同步中
                     </span>
                 </div>
-                <p class="text-slate-500 text-sm mt-1">已解鎖全線站點顯示（完整顯示所有中途站），並完美支援九巴、城巴及聯營線（如 948、102 等）！</p>
+                <p class="text-slate-500 text-sm mt-1">全線車站解鎖、聯營線支援，並已修復路線選擇與紀錄聯動顯示！</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
@@ -62,7 +62,7 @@
                         <!-- Route Search Box -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">搜尋並選擇路線 (支援聯營、過海線) *</label>
-                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 948, 88K, 102) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
+                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 46X, 948) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
                             
                             <select id="rec-route" required onchange="onSelectRouteChanged()" size="5" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none overflow-y-auto">
                                 <option value="">-- 載入全港路線中 --</option>
@@ -87,7 +87,7 @@
                             </select>
                         </div>
 
-                        <!-- Specific Stop Selection (Full stops unlocked) -->
+                        <!-- Specific Stop Selection -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">候車 / 發生地點 (完整車站名稱)</label>
                             <select id="rec-stop" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
@@ -142,7 +142,7 @@
             <div class="lg:col-span-8">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                     
-                    <!-- Route Tabs Header Bar (Sorted by most delay counts) -->
+                    <!-- Route Tabs Header Bar -->
                     <div class="border-b border-slate-200 bg-slate-50 px-4 pt-3 flex items-center justify-between overflow-x-auto">
                         <div id="route-tabs" class="flex gap-2 min-w-max">
                             <!-- Dynamic Route Tabs -->
@@ -179,7 +179,7 @@
                         </table>
                         <div id="empty-state" class="text-center py-12 text-slate-400 hidden">
                             <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            暫時未有此路線嘅雲端紀錄，請在左側選擇路線並輸入班次。
+                            暫時未有此路線嘅雲端紀錄，請在左側輸入並提交第一筆班次紀錄！
                         </div>
                     </div>
 
@@ -189,7 +189,7 @@
         </div>
     </div>
 
-    <!-- Auth Modal (Email + 密碼 註冊 / 登入彈窗) -->
+    <!-- Auth Modal -->
     <div id="auth-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
@@ -200,7 +200,7 @@
             <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
                 <div id="auth-username-field" class="hidden">
                     <label class="block text-xs font-semibold text-slate-600 mb-1">用戶名稱 (Username) *</label>
-                    <input type="text" id="auth-username" placeholder="例如：沙田街坊阿生, BusFan_HK" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    <input type="text" id="auth-username" placeholder="例如：沙田街坊阿生" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">電郵地址 (Email) *</label>
@@ -223,7 +223,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal (後加及修改跟進視窗) -->
+    <!-- Edit Modal -->
     <div id="edit-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 border border-slate-200">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -272,8 +272,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">交通投訴組 / 巴士公司回覆內容 (後加重點)</label>
-                    <textarea id="edit-reply" rows="4" placeholder="在此更新交通投訴組 (ATCU) 個案編號、巴士公司回覆原因或改善措施..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"></textarea>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">交通投訴組 / 巴士公司回覆內容</label>
+                    <textarea id="edit-reply" rows="4" placeholder="更新個案編號或巴士公司回覆原因..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"></textarea>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -284,7 +284,7 @@
         </div>
     </div>
 
-    <!-- Firebase Real-time Firestore & Auth SDK Integration -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
@@ -306,7 +306,6 @@
             onSnapshot 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 你的真實 Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBF9gb3EZPsHWG06JuibTXYwbd93mkmDWA",
             authDomain: "bus-tracker-4f6c9.firebaseapp.com",
@@ -318,7 +317,7 @@
         };
 
         const appId = 'bus-tracker-hk-app';
-        const ADMIN_EMAIL = "lp785at88k@gmail.com"; // 記得改成你的 Admin Email
+        const ADMIN_EMAIL = "lp785at88k@gmail.com";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -335,14 +334,9 @@
 
         async function initAuth() {
             try {
-                if (!auth.currentUser) {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.log("Auth init:", err.message);
-            }
+                if (!auth.currentUser) await signInAnonymously(auth);
+            } catch (err) { console.log("Auth:", err.message); }
         }
-
         initAuth();
 
         onAuthStateChanged(auth, (user) => {
@@ -353,8 +347,7 @@
 
             if (user && !user.isAnonymous) {
                 const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-                const displayName = user.displayName || user.email.split('@')[0];
-                nameDisp.textContent = `👤 ${displayName} ${isAdmin ? '👑 [管理員]' : ''}`;
+                nameDisp.textContent = `👤 ${user.displayName || user.email.split('@')[0]} ${isAdmin ? '👑 [管理員]' : ''}`;
                 btnAuth.textContent = "登出";
                 btnAuth.onclick = () => signOut(auth);
             } else {
@@ -387,6 +380,7 @@
                 }
 
                 window.renderRouteTabs();
+                window.renderRouteDropdown();
                 window.renderRecords();
             }, (err) => console.error("Firestore sync error:", err));
         });
@@ -397,32 +391,29 @@
             const password = document.getElementById('auth-password').value;
             const username = document.getElementById('auth-username').value.trim();
             const btn = document.getElementById('btn-auth-submit');
-
             btn.disabled = true;
-            btn.textContent = "處理中...";
 
             try {
                 if (window.isAuthLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
-                    if (!username) throw new Error("請輸入顯示名稱 (Username)");
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    await updateProfile(userCredential.user, { displayName: username });
+                    if (!username) throw new Error("請輸入顯示名稱");
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(cred.user, { displayName: username });
                 }
                 window.closeAuthModal();
-                alert(window.isAuthLoginMode ? "✅ 登入成功！" : "🎉 帳號註冊成功，已為您登入！");
+                alert("✅ 成功！");
             } catch (err) {
-                alert("❌ 驗證失敗: " + err.message);
+                alert("❌ 失敗: " + err.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = window.isAuthLoginMode ? "登入" : "註冊新帳號";
             }
         };
 
         window.handleAddRecord = async function(e) {
             e.preventDefault();
             if (!window.currentUser || window.currentUser.isAnonymous) {
-                alert('⚠️ 為了防破壞與維護紀錄真實性，請先【登入 / 註冊】帳號後再輸入！');
+                alert('⚠️ 請先登入帳號後再輸入紀錄！');
                 window.openAuthModal();
                 return;
             }
@@ -433,7 +424,6 @@
 
             const btn = document.getElementById('btn-sub-record');
             btn.disabled = true;
-            btn.textContent = "同步上傳至雲端...";
 
             try {
                 await addDoc(recordsRef, {
@@ -463,32 +453,21 @@
 
                 document.getElementById('rec-reply').value = '';
                 document.getElementById('rec-actual').value = '';
+                alert('✅ 紀錄已成功同步至雲端！');
             } catch (err) {
                 alert('❌ 上傳失敗：' + err.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = "提交紀錄 (同步至 Firestore 雲端)";
             }
         };
 
         window.handleUpdateRecord = async function(e) {
             e.preventDefault();
             if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
-
             const recId = document.getElementById('edit-rec-id').value;
-            const rec = window.records.find(r => r.id === recId);
             
-            const isAdmin = window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-            if (rec && rec.uid !== window.currentUser.uid && !isAdmin) {
-                return alert('⚠️ 權限不符：你只能修改由你本人帳號建立的紀錄！');
-            }
-
-            const btn = document.getElementById('btn-save-edit');
-            btn.disabled = true;
-
             try {
-                const docToUpdate = doc(db, 'artifacts', appId, 'public', 'data', 'bus_records', recId);
-                await updateDoc(docToUpdate, {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bus_records', recId), {
                     scheduled: parseInt(document.getElementById('edit-sched').value) || 0,
                     actual: parseInt(document.getElementById('edit-actual').value) || 0,
                     standing: document.getElementById('edit-standing').value,
@@ -496,139 +475,89 @@
                     reply: document.getElementById('edit-reply').value.trim(),
                     updatedAt: Date.now()
                 });
-
                 window.closeEditModal();
             } catch (err) {
                 alert('❌ 更新失敗：' + err.message);
-            } finally {
-                btn.disabled = false;
             }
         };
 
         window.deleteRecord = async function(recId) {
             if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
-
-            const rec = window.records.find(r => r.id === recId);
-            const isAdmin = window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-            
-            if (rec && rec.uid !== window.currentUser.uid && !isAdmin) {
-                return alert('⚠️ 權限不符：你只能刪除由你本人帳號建立的紀錄！');
-            }
-
-            if (confirm(isAdmin ? '👑 [管理員權限] 確定要刪除這筆紀錄嗎？' : '確定要刪除這筆雲端紀錄嗎？')) {
+            if (confirm('確定要刪除這筆雲端紀錄嗎？')) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bus_records', recId));
-                } catch (err) {
-                    alert('❌ 刪除失敗：' + err.message);
-                }
+                } catch (err) { alert('❌ 刪除失敗：' + err.message); }
             }
         };
     </script>
 
-    <!-- UI Helpers & Full HK Bus Loader (KMB, CTB, NLB) with Full Stops Unlocked -->
+    <!-- UI Helpers -->
     <script>
         window.onload = async function() {
             document.getElementById('rec-date').value = new Date().toISOString().split('T')[0];
             await preloadAllHkRoutes();
+            if (!window.activeRouteNumber && window.allHkRoutes.length > 0) {
+                window.activeRouteNumber = window.allHkRoutes[0].number;
+            }
             renderRouteDropdown();
             renderRouteTabs();
             renderRecords();
         };
 
-        function openAuthModal() {
-            document.getElementById('auth-modal').classList.remove('hidden');
-        }
-
-        function closeAuthModal() {
-            document.getElementById('auth-modal').classList.add('hidden');
-        }
-
+        function openAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+        
         function toggleAuthMode() {
             window.isAuthLoginMode = !window.isAuthLoginMode;
             document.getElementById('auth-modal-title').textContent = window.isAuthLoginMode ? "用戶登入" : "註冊新帳號";
             document.getElementById('btn-auth-submit').textContent = window.isAuthLoginMode ? "登入" : "註冊新帳號";
             document.getElementById('auth-switch-text').textContent = window.isAuthLoginMode ? "未有帳號？" : "已有帳號？";
             document.getElementById('btn-auth-switch').textContent = window.isAuthLoginMode ? "立即免費註冊新帳號" : "返回登入";
-            
-            const unameField = document.getElementById('auth-username-field');
-            if (window.isAuthLoginMode) unameField.classList.add('hidden');
-            else unameField.classList.remove('hidden');
+            document.getElementById('auth-username-field').classList.toggle('hidden', window.isAuthLoginMode);
         }
 
-        // Full HK Bus Loader (KMB, Citybus, NLB) with Joint Venture Support
         async function preloadAllHkRoutes() {
             const loaderStatus = document.getElementById('routes-loader-status');
-            
-            const cachedMaster = localStorage.getItem('hk_master_routes_cache_v4');
+            const cachedMaster = localStorage.getItem('hk_master_routes_cache_v5');
             if (cachedMaster) {
                 window.allHkRoutes = JSON.parse(cachedMaster);
                 loaderStatus.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
-                loaderStatus.innerHTML = `✅ 已自動整合 ${window.allHkRoutes.length} 條路線`;
+                loaderStatus.innerHTML = `✅ 已整合 ${window.allHkRoutes.length} 條路線`;
                 return;
             }
 
             try {
                 let rawList = [];
-
-                // 1. KMB & LWB
                 const kmbRes = await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/');
                 const kmbData = await kmbRes.json();
-                if (kmbData && kmbData.data) {
-                    kmbData.data.forEach(r => {
-                        rawList.push({ number: r.route, company: 'kmb', companyName: '九巴/龍運', orig: r.orig_tc, dest: r.dest_tc });
-                    });
+                if (kmbData?.data) {
+                    kmbData.data.forEach(r => rawList.push({ number: r.route, company: 'kmb', companyName: '九巴/龍運', orig: r.orig_tc, dest: r.dest_tc }));
                 }
 
-                // 2. Citybus (CTB)
                 const ctbRes = await fetch('https://data.etabus.gov.hk/v1/transport/citybus-nwfb/route/ctb');
                 const ctbData = await ctbRes.json();
-                if (ctbData && ctbData.data) {
-                    ctbData.data.forEach(r => {
-                        rawList.push({ number: r.route, company: 'ctb', companyName: '城巴', orig: r.orig_tc, dest: r.dest_tc });
-                    });
+                if (ctbData?.data) {
+                    ctbData.data.forEach(r => rawList.push({ number: r.route, company: 'ctb', companyName: '城巴', orig: r.orig_tc, dest: r.dest_tc }));
                 }
 
-                // 3. New Lantao Bus (NLB)
-                const nlbRes = await fetch('https://rt.data.gov.hk/v2/transport/nlb/route.php?action=list');
-                const nlbData = await nlbRes.json();
-                if (nlbData && nlbData.routes) {
-                    nlbData.routes.forEach(r => {
-                        const parts = (r.routeName_c || '').split(' > ');
-                        rawList.push({ number: r.routeNo, company: 'nlb', companyName: '嶼巴', orig: parts[0] || '起始', dest: parts[1] || '終點' });
-                    });
-                }
-
-                // Deduplicate & 2-in-1 merge with Joint-Venture (聯營線) support
                 const routeMap = new Map();
                 rawList.forEach(r => {
-                    const key = `${r.number}`.toUpperCase(); // Normalize by route number so joint ventures merge nicely
+                    const key = `${r.number}`.toUpperCase();
                     if (!routeMap.has(key)) {
-                        routeMap.set(key, { 
-                            id: `route_${r.number}`, 
-                            number: r.number, 
-                            company: r.company, 
-                            companyName: r.companyName, 
-                            terminals: [r.orig, r.dest].filter(Boolean) 
-                        });
+                        routeMap.set(key, { id: `route_${r.number}`, number: r.number, company: r.company, companyName: r.companyName, terminals: [r.orig, r.dest].filter(Boolean) });
                     } else {
                         const existing = routeMap.get(key);
-                        if (!existing.companyName.includes(r.companyName)) {
-                            existing.companyName += ` / ${r.companyName}`; // e.g. 九巴/龍運 / 城巴 (聯營線)
-                        }
+                        if (!existing.companyName.includes(r.companyName)) existing.companyName += ` / ${r.companyName}`;
                         if (r.orig && !existing.terminals.includes(r.orig)) existing.terminals.push(r.orig);
                         if (r.dest && !existing.terminals.includes(r.dest)) existing.terminals.push(r.dest);
                     }
                 });
 
-                window.allHkRoutes = Array.from(routeMap.values()).map(r => {
-                    return { ...r, start: r.terminals[0] || '起始站', end: r.terminals[1] || r.terminals[0] || '終點站' };
-                }).sort((a,b) => a.number.localeCompare(b.number, 'en', {numeric: true}));
-                
-                localStorage.setItem('hk_master_routes_cache_v4', JSON.stringify(window.allHkRoutes));
+                window.allHkRoutes = Array.from(routeMap.values()).map(r => ({ ...r, start: r.terminals[0] || '起始', end: r.terminals[1] || r.terminals[0] || '終點' })).sort((a,b) => a.number.localeCompare(b.number, 'en', {numeric: true}));
+                localStorage.setItem('hk_master_routes_cache_v5', JSON.stringify(window.allHkRoutes));
                 loaderStatus.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
-                loaderStatus.innerHTML = `✅ 已自動整合 ${window.allHkRoutes.length} 條路線`;
+                loaderStatus.innerHTML = `✅ 已整合 ${window.allHkRoutes.length} 條路線`;
             } catch (err) {
-                console.error("Routes error:", err);
                 loaderStatus.className = "bg-rose-100 text-rose-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
                 loaderStatus.innerHTML = `⚠️ 路線載入異常`;
             }
@@ -639,10 +568,7 @@
             selectRoute.innerHTML = '';
             const searchKey = filterKeyword.trim().toUpperCase();
             
-            const filtered = window.allHkRoutes.filter(r => {
-                if (!searchKey) return true;
-                return r.number.toUpperCase().includes(searchKey) || r.start.includes(searchKey) || r.end.includes(searchKey);
-            });
+            const filtered = window.allHkRoutes.filter(r => !searchKey || r.number.toUpperCase().includes(searchKey) || r.start.includes(searchKey) || r.end.includes(searchKey));
 
             if (filtered.length === 0) {
                 selectRoute.innerHTML = '<option value="">找不到符合條件的路線</option>';
@@ -658,29 +584,25 @@
 
             if (window.activeRouteNumber) {
                 const matched = window.allHkRoutes.find(r => r.number === window.activeRouteNumber);
-                if (matched) selectRoute.value = matched.id;
+                if (matched) {
+                    selectRoute.value = matched.id;
+                    updateDirectionOptions();
+                }
             }
         }
 
-        function filterRouteOptions() {
-            renderRouteDropdown(document.getElementById('route-search-input').value);
-        }
+        function filterRouteOptions() { renderRouteDropdown(document.getElementById('route-search-input').value); }
 
         function onSelectRouteChanged() {
             const routeId = document.getElementById('rec-route').value;
             if (!routeId) return;
-
             const routeObj = window.allHkRoutes.find(r => r.id === routeId);
             if (routeObj) {
                 window.activeRouteNumber = routeObj.number;
-                if (!window.activeTabs.some(t => t.number === routeObj.number)) {
-                    window.activeTabs.push(routeObj);
-                }
+                if (!window.activeTabs.some(t => t.number === routeObj.number)) window.activeTabs.push(routeObj);
             }
-
             localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
             localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
-
             renderRouteTabs();
             updateDirectionOptions();
             loadStopsForRecord();
@@ -698,9 +620,7 @@
 
             const delayCounts = {};
             window.records.forEach(rec => {
-                if ((rec.actual - rec.scheduled) > 0) {
-                    delayCounts[rec.routeNumber] = (delayCounts[rec.routeNumber] || 0) + 1;
-                }
+                if ((rec.actual - rec.scheduled) > 0) delayCounts[rec.routeNumber] = (delayCounts[rec.routeNumber] || 0) + 1;
             });
 
             window.activeTabs.sort((a,b) => (delayCounts[b.number] || 0) - (delayCounts[a.number] || 0));
@@ -712,6 +632,9 @@
                     window.activeRouteNumber = route.number;
                     localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
                     renderRouteTabs();
+                    renderRouteDropdown();
+                    updateDirectionOptions();
+                    loadStopsForRecord();
                     renderRecords();
                 };
                 
@@ -719,88 +642,65 @@
                 btn.className = `pb-2 px-3 text-xs md:text-sm font-medium whitespace-nowrap flex items-center gap-1.5 rounded-t-lg transition ${isActive ? 'active-tab' : 'text-slate-500 hover:text-slate-800'}`;
                 btn.innerHTML = `
                     <span>${route.number} <span class="text-[11px] font-normal opacity-75">(${route.companyName || ''})</span></span>
-                    ${delays > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold" title="${delays} 次脫班">${delays}</span>` : ''}
+                    ${delays > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">${delays}</span>` : ''}
                 `;
                 tabsContainer.appendChild(btn);
             });
         }
 
         function updateDirectionOptions() {
-            const routeId = document.getElementById('rec-route').value;
-            const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            const route = window.allHkRoutes.find(r => r.number === window.activeRouteNumber);
             const dirSelect = document.getElementById('rec-direction');
             dirSelect.innerHTML = '';
-
-            if (!route) {
-                dirSelect.innerHTML = '<option value="">-- 請先選擇路線 --</option>';
-                return;
-            }
+            if (!route) return;
 
             const opt1 = document.createElement('option');
             opt1.value = `往 ${route.end}`;
             opt1.textContent = `往 ${route.end}`;
-
             const opt2 = document.createElement('option');
             opt2.value = `往 ${route.start}`;
             opt2.textContent = `往 ${route.start}`;
 
             dirSelect.appendChild(opt1);
             dirSelect.appendChild(opt2);
+            loadStopsForRecord();
         }
 
-        // Unlocked Full Stops Loader supporting Joint-Venture & CTB/KMB
         async function loadStopsForRecord() {
-            const routeId = document.getElementById('rec-route').value;
-            const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            const route = window.allHkRoutes.find(r => r.number === window.activeRouteNumber);
             const stopSelect = document.getElementById('rec-stop');
             stopSelect.innerHTML = '<option value="全線/一般候車">載入全部車站中...</option>';
-
-            if (!route) {
-                stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
-                return;
-            }
+            if (!route) { stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>'; return; }
 
             try {
                 let stopsList = [];
-
-                // Try KMB first if company includes kmb
+                const dirParam = document.getElementById('rec-direction').value.includes(route.end) ? 'outbound' : 'inbound';
+                
                 if (route.companyName.includes('九巴')) {
-                    const dirParam = document.getElementById('rec-direction').value.includes(route.end) ? 'outbound' : 'inbound';
                     const res = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${route.number}/${dirParam}/1`);
                     const data = await res.json();
-                    if (data && data.data && data.data.length > 0) {
-                        const stopDetails = await Promise.all(
-                            data.data.map(s => fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop/${s.stop}`).then(r => r.json()))
-                        );
-                        stopsList = stopDetails.map(sDoc => sDoc?.data?.name_tc).filter(Boolean);
+                    if (data?.data) {
+                        const details = await Promise.all(data.data.map(s => fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop/${s.stop}`).then(r => r.json())));
+                        stopsList = details.map(d => d?.data?.name_tc).filter(Boolean);
                     }
-                }
-
-                // If KMB gave nothing or it's Citybus, try CTB API
-                if (stopsList.length === 0 && route.companyName.includes('城巴')) {
-                    const dirParam = document.getElementById('rec-direction').value.includes(route.end) ? 'outbound' : 'inbound';
+                } else if (route.companyName.includes('城巴')) {
                     const boundCode = dirParam === 'outbound' ? 'O' : 'I';
                     const res = await fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/route-stop/CTB/${route.number}/${boundCode}`);
                     const data = await res.json();
-                    if (data && data.data && data.data.length > 0) {
-                        const stopDetails = await Promise.all(
-                            data.data.map(s => fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/stop/${s.stop}`).then(r => r.json()))
-                        );
-                        stopsList = stopDetails.map(sDoc => sDoc?.data?.name_tc).filter(Boolean);
+                    if (data?.data) {
+                        const details = await Promise.all(data.data.map(s => fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/stop/${s.stop}`).then(r => r.json())));
+                        stopsList = details.map(d => d?.data?.name_tc).filter(Boolean);
                     }
                 }
 
                 stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
-                if (stopsList.length > 0) {
-                    stopsList.forEach(name => {
-                        const opt = document.createElement('option');
-                        opt.value = name;
-                        opt.textContent = name;
-                        stopSelect.appendChild(opt);
-                    });
-                }
+                stopsList.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    stopSelect.appendChild(opt);
+                });
             } catch (err) {
-                console.log("Full stops load fallback:", err);
                 stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
             }
         }
@@ -809,12 +709,11 @@
             const tbody = document.getElementById('records-tbody');
             const emptyState = document.getElementById('empty-state');
             const infoDisplay = document.getElementById('route-info-display');
-            
             tbody.innerHTML = '';
 
             const activeRoute = window.allHkRoutes.find(r => r.number === window.activeRouteNumber) || window.activeTabs[0];
             if (!activeRoute) {
-                infoDisplay.innerHTML = '請在左側搜尋並選擇路線';
+                infoDisplay.innerHTML = '請選擇路線';
                 emptyState.classList.add('hidden');
                 return;
             }
@@ -834,32 +733,8 @@
             filteredRecords.forEach(rec => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-
                 const delay = rec.actual - rec.scheduled;
-                let delayBadge = '';
-                if (delay > 0) {
-                    delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-700">脫班 +${delay} 分鐘</span>`;
-                } else if (delay < 0) {
-                    delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700">過早 -${Math.abs(delay)} 分鐘</span>`;
-                } else {
-                    delayBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">準時</span>`;
-                }
-
-                let standingBadge = '';
-                if (rec.standing === '頂閘/飛站') {
-                    standingBadge = `<span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">頂閘/飛站</span>`;
-                } else if (rec.standing === '有') {
-                    standingBadge = `<span class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded">有企人</span>`;
-                } else {
-                    standingBadge = `<span class="text-xs text-slate-400">冇企人</span>`;
-                }
-
-                let complaintBadge = '';
-                if (rec.complaint.includes('已投訴')) {
-                    complaintBadge = `<span class="inline-block text-xs font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mb-1">${rec.complaint}</span>`;
-                } else {
-                    complaintBadge = `<span class="text-xs text-slate-400 mb-1 inline-block">未跟進</span>`;
-                }
+                let delayBadge = delay > 0 ? `<span class="px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-700">脫班 +${delay} 分</span>` : (delay < 0 ? `<span class="px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700">過早 -${Math.abs(delay)} 分</span>` : `<span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">準時</span>`);
 
                 const isAdmin = window.currentUser && window.currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
                 const isMyRecord = window.currentUser && !window.currentUser.isAnonymous && (rec.uid === window.currentUser.uid || isAdmin);
@@ -867,32 +742,26 @@
                 tr.innerHTML = `
                     <td class="p-2.5 whitespace-nowrap">
                         <div class="font-medium text-slate-900">${rec.date} ${rec.time}</div>
-                        <div class="text-[11px] text-sky-700 font-semibold">👤 錄入者：${rec.username || '熱心市民'}</div>
+                        <div class="text-[11px] text-sky-700 font-semibold">👤 ${rec.username || '熱心市民'}</div>
                     </td>
                     <td class="p-2.5 text-xs text-slate-700">
                         <div class="font-medium text-slate-800">${rec.direction}</div>
                         <div class="text-slate-400 text-[11px]">${rec.stopName || '全線/一般候車'}</div>
                     </td>
                     <td class="p-2.5 text-center whitespace-nowrap">
-                        <div class="text-xs text-slate-500">原定: ${rec.scheduled} 分鐘</div>
-                        <div class="font-semibold text-slate-800">實際: ${rec.actual} 分鐘</div>
+                        <div class="text-xs text-slate-500">原定: ${rec.scheduled} 分</div>
+                        <div class="font-semibold text-slate-800">實際: ${rec.actual} 分</div>
                     </td>
                     <td class="p-2.5 text-center whitespace-nowrap">${delayBadge}</td>
-                    <td class="p-2.5 text-center whitespace-nowrap">${standingBadge}</td>
+                    <td class="p-2.5 text-center whitespace-nowrap"><span class="text-xs ${rec.standing==='頂閘/飛站'?'text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded':''}">${rec.standing}</span></td>
                     <td class="p-2.5 max-w-xs">
-                        ${complaintBadge}
-                        <div class="text-xs text-slate-600 line-clamp-2" title="${rec.reply}">${rec.reply || '<span class="text-slate-300">無備註回覆</span>'}</div>
+                        <div class="text-xs font-medium text-purple-700">${rec.complaint}</div>
+                        <div class="text-xs text-slate-600 line-clamp-2">${rec.reply || '<span class="text-slate-300">無回覆</span>'}</div>
                     </td>
                     <td class="p-2.5 text-right whitespace-nowrap space-x-1">
-                        ${isMyRecord ? `
-                            <button onclick="openEditModal('${rec.id}')" class="text-sky-600 hover:text-sky-800 text-xs px-2 py-1 rounded bg-sky-50 hover:bg-sky-100 font-medium transition">✏️ 編輯/後加</button>
-                            <button onclick="window.deleteRecord('${rec.id}')" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1 rounded transition">刪除</button>
-                        ` : `
-                            <span class="text-[10px] text-slate-300 italic">僅限作者/管理員修改</span>
-                        `}
+                        ${isMyRecord ? `<button onclick="openEditModal('${rec.id}')" class="text-sky-600 hover:text-sky-800 text-xs px-2 py-1 rounded bg-sky-50 font-medium">✏️ 編輯</button><button onclick="window.deleteRecord('${rec.id}')" class="text-slate-400 hover:text-rose-600 text-xs">刪除</button>` : `<span class="text-[10px] text-slate-300">唯讀</span>`}
                     </td>
                 `;
-
                 tbody.appendChild(tr);
             });
         }
@@ -900,77 +769,32 @@
         function openEditModal(recId) {
             const rec = window.records.find(r => r.id === recId);
             if (!rec) return;
-
             document.getElementById('edit-rec-id').value = rec.id;
-            document.getElementById('edit-info-route').textContent = `[${rec.companyName || '巴士'}] 路線 ${rec.routeNumber} (${rec.direction}) @ ${rec.stopName || '一般候車'}`;
-            document.getElementById('edit-info-time').textContent = `${rec.date} ${rec.time} (錄入者: ${rec.username})`;
-
+            document.getElementById('edit-info-route').textContent = `[${rec.companyName}] 路線 ${rec.routeNumber} (${rec.direction}) @ ${rec.stopName}`;
+            document.getElementById('edit-info-time').textContent = `${rec.date} ${rec.time} (${rec.username})`;
             document.getElementById('edit-sched').value = rec.scheduled;
             document.getElementById('edit-actual').value = rec.actual;
             document.getElementById('edit-standing').value = rec.standing || '冇';
             document.getElementById('edit-complaint').value = rec.complaint || '否';
             document.getElementById('edit-reply').value = rec.reply || '';
-
-            document.getElementById('edit-modal').classList.add('hidden'); // wait
             document.getElementById('edit-modal').classList.remove('hidden');
         }
 
-        function closeEditModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-        }
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
 
         function exportCSV(scope) {
-            let targetRecords = [];
-            let fileName = '全港巴士脫班統計表_全紀錄.csv';
-
-            if (scope === 'active') {
-                targetRecords = window.records.filter(r => r.routeNumber === window.activeRouteNumber);
-                fileName = `巴士脫班統計表_路線${window.activeRouteNumber || ''}.csv`;
-            } else {
-                targetRecords = [...window.records];
-            }
-
-            if (targetRecords.length === 0) {
-                alert('沒有可供匯出的數據！');
-                return;
-            }
-
-            const header = ['營辦商', '路線號碼', '日期', '時間', '方向', '候車車站', '原定班次(分鐘)', '實際班次(分鐘)', '脫班延誤(分鐘)', '是否有企人', '交通投訴組跟進', '回覆/備註', '錄入者'];
-            
-            const rows = targetRecords.map(rec => {
-                const delay = rec.actual - rec.scheduled;
-                return [
-                    `"${rec.companyName || '巴士'}"`,
-                    `"${rec.routeNumber}"`,
-                    `"${rec.date}"`,
-                    `"${rec.time}"`,
-                    `"${rec.direction}"`,
-                    `"${rec.stopName || '全線/一般候車'}"`,
-                    rec.scheduled,
-                    rec.actual,
-                    delay,
-                    `"${rec.standing}"`,
-                    `"${rec.complaint}"`,
-                    `"${(rec.reply || '').replace(/"/g, '""')}"`,
-                    `"${rec.username || '熱心市民'}"`
-                ];
-            });
-
-            let csvContent = "\uFEFF" + [header.join(','), ...rows.map(e => e.join(','))].join('\n');
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+            let targetRecords = scope === 'active' ? window.records.filter(r => r.routeNumber === window.activeRouteNumber) : [...window.records];
+            if (targetRecords.length === 0) return alert('無數據匯出！');
+            const header = ['營辦商', '路線號碼', '日期', '時間', '方向', '車站', '原定(分)', '實際(分)', '脫班(分)', '企人', '投訴組', '回覆', '錄入者'];
+            const rows = targetRecords.map(r => [`"${r.companyName}"`, `"${r.routeNumber}"`, `"${r.date}"`, `"${r.time}"`, `"${r.direction}"`, `"${r.stopName}"`, r.scheduled, r.actual, r.actual - r.scheduled, `"${r.standing}"`, `"${r.complaint}"`, `"${(r.reply||'').replace(/"/g,'""')}"`, `"${r.username}"`]);
+            const blob = new Blob(["\uFEFF" + [header.join(','), ...rows.map(e => e.join(','))].join('\n')], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", fileName);
-            document.body.appendChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.download = `巴士脫班統計_${scope==='active'?window.activeRouteNumber:'全紀錄'}.csv`;
             link.click();
-            document.body.removeChild(link);
         }
-
-        function exportCurrentTab() {
-            exportCSV('active');
-        }
+        function exportCurrentTab() { exportCSV('active'); }
     </script>
 </body>
 </html>
+```eof
