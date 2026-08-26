@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全港巴士脫班及服務統計系統 (GitHub Pages 免設定版)</title>
+    <title>全港巴士脫班及服務統計系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .active-tab {
             border-bottom: 3px solid #0284c7;
             color: #0284c7;
             font-weight: 600;
+            background-color: #f0f9ff;
         }
     </style>
 </head>
@@ -22,23 +23,28 @@
             <div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-2xl font-bold text-slate-900">🚌 全港巴士脫班及服務統計系統</h1>
-                    <span class="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">DATA.GOV.HK 連線</span>
-                    <span id="sync-status" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 本地儲存 (即時運作)
+                    <span id="routes-loader-status" class="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 載入路線中...
                     </span>
                 </div>
-                <p class="text-slate-500 text-sm mt-1">GitHub Pages 零配置版：資料自動儲存於瀏覽器，支援資料備份匯出/匯入共享、自動載入全港巴士路線及匯出 Excel</p>
+                <p class="text-slate-500 text-sm mt-1">已自動整合全港路線。脫班最多嘅路線會自動排喺最頭！支援用戶註冊及 Username 顯示。</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-                <button onclick="exportJSON()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded-lg transition">
-                    📦 備份數據 (JSON)
+                <!-- User Profile Display -->
+                <div id="user-bar" class="text-xs bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span id="user-name-display" class="font-medium text-slate-700">👤 訪客</span>
+                    <button id="btn-auth-trigger" onclick="openAuthModal()" class="text-sky-600 hover:text-sky-800 font-bold">登入 / 註冊</button>
+                </div>
+
+                <button onclick="exportJSON()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition">
+                    📦 備份 (JSON)
                 </button>
-                <label class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-medium px-3 py-2 rounded-lg cursor-pointer transition">
+                <label class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer transition">
                     📥 匯入備份
                     <input type="file" id="import-json-file" accept=".json" onchange="importJSON(event)" class="hidden">
                 </label>
-                <button onclick="exportCSV('all')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-sm transition flex items-center gap-1">
+                <button onclick="exportCSV('all')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
                     📊 匯出 Excel (CSV)
                 </button>
             </div>
@@ -47,66 +53,23 @@
         <!-- Main Grid Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- Left Panel: Data Entry -->
+            <!-- Left Panel: Data Entry Form -->
             <div class="lg:col-span-4 space-y-6">
                 
-                <!-- Navigation Switch -->
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex rounded-lg bg-slate-100 p-1">
-                        <button id="btn-form-record" onclick="switchFormMode('record')" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-white shadow text-slate-800">
-                            + 新增班次紀錄
-                        </button>
-                        <button id="btn-form-route" onclick="switchFormMode('route')" class="flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600">
-                            🔍 搜尋/載入新路線
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Form 1: Auto-search Route via HK Open Data API -->
-                <div id="form-route-container" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hidden">
-                    <h2 class="text-base font-bold text-slate-900 mb-2 pb-2 border-b border-slate-100 flex items-center gap-2">
-                        🇭🇰 自動載入香港巴士路線
-                    </h2>
-                    <p class="text-xs text-slate-500 mb-4">輸入路線號碼，自動抓取官方起點及終點，無須手動輸入。</p>
-                    
-                    <form id="add-route-form" onsubmit="handleSearchAndAddRoute(event)" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">專營巴士公司 *</label>
-                            <select id="api-company" required class="w-full text-sm p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
-                                <option value="kmb">九巴 / 龍運 (KMB / LWB)</option>
-                                <option value="ctb">城巴 (Citybus)</option>
-                                <option value="nlb">新嶼巴 (NLB)</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">路線號碼 *</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="api-route-num" placeholder="例如：1A, 68X, A21, B2" required class="flex-1 text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none uppercase">
-                                <button type="submit" id="btn-fetch-route" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2.5 rounded-lg text-sm transition whitespace-nowrap">
-                                    搜尋路線
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Search Result Box -->
-                        <div id="route-search-result" class="hidden p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-2">
-                            <!-- Filled dynamically -->
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Form 2: Add Incident Record -->
                 <div id="form-record-container" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h2 class="text-base font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+                    <h2 class="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-100 flex items-center gap-2">
                         📝 輸入脫班 / 服務紀錄
                     </h2>
+                    
                     <form id="add-record-form" onsubmit="handleAddRecord(event)" class="space-y-3">
                         
+                        <!-- Route Instant Search Box -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">選擇路線 *</label>
-                            <select id="rec-route" required onchange="onSelectRouteChanged()" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
-                                <option value="">-- 請先搜尋並載入路線 --</option>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">搜尋並選擇路線 (已自動2合1整合) *</label>
+                            <input type="text" id="route-search-input" oninput="filterRouteOptions()" placeholder="🔍 輸入路線 (例如 88K, 1A, 68X, A21) 或地點..." class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none mb-2">
+                            
+                            <select id="rec-route" required onchange="onSelectRouteChanged()" size="5" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sky-500 focus:outline-none overflow-y-auto">
+                                <option value="">-- 載入全港路線中 --</option>
                             </select>
                         </div>
 
@@ -183,8 +146,9 @@
             <div class="lg:col-span-8">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                     
+                    <!-- Route Tabs Header Bar (Sorted by most delay counts) -->
                     <div class="border-b border-slate-200 bg-slate-50 px-4 pt-3 flex items-center justify-between overflow-x-auto">
-                        <div id="route-tabs" class="flex gap-4 min-w-max">
+                        <div id="route-tabs" class="flex gap-2 min-w-max">
                             <!-- Dynamic Route Tabs -->
                         </div>
                     </div>
@@ -204,7 +168,7 @@
                         <table class="w-full text-left border-collapse min-w-[700px]">
                             <thead>
                                 <tr class="border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase bg-slate-50">
-                                    <th class="p-2.5">日期/時間</th>
+                                    <th class="p-2.5">日期/時間/錄入者</th>
                                     <th class="p-2.5">方向與車站</th>
                                     <th class="p-2.5 text-center">原定/實際</th>
                                     <th class="p-2.5 text-center">脫班情況</th>
@@ -219,13 +183,34 @@
                         </table>
                         <div id="empty-state" class="text-center py-12 text-slate-400 hidden">
                             <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            暫時未有此路線的紀錄，請在左側搜尋載入路線並輸入班次。
+                            暫時未有此路線的紀錄，請在左側選擇路線並輸入班次。
                         </div>
                     </div>
 
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Auth Modal (會員登入/註冊) -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 id="auth-modal-title" class="text-lg font-bold text-slate-900">用戶登入 / 設定名稱</h3>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">用戶名稱 (Username) *</label>
+                    <input type="text" id="auth-username" required placeholder="例如：沙田街坊阿生, BusFan_HK" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+
+                <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">
+                    保存並開始紀錄
+                </button>
+            </form>
         </div>
     </div>
 
@@ -290,214 +275,253 @@
         </div>
     </div>
 
-    <!-- Core App Logic (LocalStorage Local Database) -->
+    <!-- Application Engine Logic -->
     <script>
-        // State Management
-        window.routes = JSON.parse(localStorage.getItem('hk_bus_routes')) || [
-            { id: 'r_default_1', number: '1A', company: 'kmb', companyName: '九巴/龍運', start: '中秀茂坪', end: '尖沙咀碼頭' }
-        ];
+        window.allHkRoutes = [];
+        window.activeTabs = JSON.parse(localStorage.getItem('hk_bus_active_tabs')) || [];
         window.records = JSON.parse(localStorage.getItem('hk_bus_records')) || [];
-        window.activeRouteId = window.routes.length > 0 ? window.routes[0].id : null;
+        window.activeRouteNumber = localStorage.getItem('hk_bus_active_route_num') || null;
+        window.currentUser = JSON.parse(localStorage.getItem('hk_bus_user')) || { username: '熱心市民' };
 
-        window.onload = function() {
+        window.onload = async function() {
             document.getElementById('rec-date').value = new Date().toISOString().split('T')[0];
-            renderRoutes();
+            updateUserBar();
+            await preloadAllHkRoutes();
+            renderRouteDropdown();
+            renderRouteTabs();
             renderRecords();
         };
 
         function saveData() {
-            localStorage.setItem('hk_bus_routes', JSON.stringify(window.routes));
+            localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
             localStorage.setItem('hk_bus_records', JSON.stringify(window.records));
-        }
-
-        function switchFormMode(mode) {
-            const recContainer = document.getElementById('form-record-container');
-            const routeContainer = document.getElementById('form-route-container');
-            const btnRec = document.getElementById('btn-form-record');
-            const btnRoute = document.getElementById('btn-form-route');
-
-            if (mode === 'record') {
-                recContainer.classList.remove('hidden');
-                routeContainer.classList.add('hidden');
-                btnRec.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-white shadow text-slate-800";
-                btnRoute.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600";
-            } else {
-                recContainer.classList.add('hidden');
-                routeContainer.classList.remove('hidden');
-                btnRoute.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-white shadow text-slate-800";
-                btnRec.className = "flex-1 py-1.5 text-xs font-semibold rounded-md text-slate-600";
+            if (window.activeRouteNumber) {
+                localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
             }
         }
 
-        // Open Data API Search
-        async function handleSearchAndAddRoute(e) {
+        function updateUserBar() {
+            const nameDisp = document.getElementById('user-name-display');
+            if (window.currentUser && window.currentUser.username) {
+                nameDisp.textContent = `👤 ${window.currentUser.username}`;
+            }
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            if (window.currentUser) {
+                document.getElementById('auth-username').value = window.currentUser.username || '';
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function handleAuthSubmit(e) {
             e.preventDefault();
-            const company = document.getElementById('api-company').value;
-            const routeNum = document.getElementById('api-route-num').value.trim().toUpperCase();
-            const resultBox = document.getElementById('route-search-result');
-            const btn = document.getElementById('btn-fetch-route');
+            const uname = document.getElementById('auth-username').value.trim();
+            if (!uname) return;
 
-            if (!routeNum) return;
-
-            btn.disabled = true;
-            btn.textContent = "搜尋中...";
-            resultBox.classList.remove('hidden');
-            resultBox.innerHTML = '<span class="text-slate-500">正在連接政府開放數據庫抓取數據...</span>';
-
-            try {
-                let start = '', end = '', compName = '';
-
-                if (company === 'kmb') {
-                    compName = '九巴/龍運';
-                    const res = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/route/${routeNum}/outbound/1`);
-                    const data = await res.json();
-                    if (data && data.data && data.data.orig_tc) {
-                        start = data.data.orig_tc;
-                        end = data.data.dest_tc;
-                    } else {
-                        const resIn = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/route/`);
-                        const dataIn = await resIn.json();
-                        const matched = dataIn.data.find(r => r.route === routeNum);
-                        if (matched) {
-                            start = matched.orig_tc;
-                            end = matched.dest_tc;
-                        }
-                    }
-                } else if (company === 'ctb') {
-                    compName = '城巴';
-                    const res = await fetch(`https://data.etabus.gov.hk/v1/transport/citybus-nwfb/route/ctb/${routeNum}`);
-                    const data = await res.json();
-                    if (data && data.data) {
-                        start = data.data.orig_tc;
-                        end = data.data.dest_tc;
-                    }
-                } else if (company === 'nlb') {
-                    compName = '新嶼巴';
-                    const res = await fetch(`https://rt.data.gov.hk/v2/transport/nlb/route.php?action=list`);
-                    const data = await res.json();
-                    if (data && data.routes) {
-                        const matched = data.routes.find(r => r.routeNo.toUpperCase() === routeNum);
-                        if (matched) {
-                            start = matched.routeName_c.split(' > ')[0] || matched.routeName_c;
-                            end = matched.routeName_c.split(' > ')[1] || matched.routeName_c;
-                        }
-                    }
-                }
-
-                if (!start || !end) {
-                    resultBox.innerHTML = `<span class="text-rose-600 font-semibold">找不到路線 ${routeNum}，請檢查號碼或營辦商。</span>`;
-                } else {
-                    const newObj = { number: routeNum, company: company, companyName: compName, start: start, end: end };
-                    resultBox.innerHTML = `
-                        <div class="font-bold text-slate-800 text-sm">✅ 找到官方路線數據：</div>
-                        <div><span class="font-semibold">路線：</span>${routeNum} (${compName})</div>
-                        <div><span class="font-semibold">起點 ↔ 終點：</span>${start} ↔ ${end}</div>
-                        <button type="button" onclick='saveRouteToLocal(${JSON.stringify(newObj)})' class="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 rounded transition">
-                            將此路線加入統計選單
-                        </button>
-                    `;
-                }
-            } catch (err) {
-                resultBox.innerHTML = `<span class="text-rose-600">抓取數據失敗，請稍後重試。(${err.message})</span>`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "搜尋路線";
-            }
+            window.currentUser = { username: uname };
+            localStorage.setItem('hk_bus_user', JSON.stringify(window.currentUser));
+            updateUserBar();
+            closeAuthModal();
+            renderRecords();
         }
 
-        function saveRouteToLocal(routeObj) {
-            if (window.routes.some(r => r.number === routeObj.number && r.company === routeObj.company)) {
-                alert(`路線 ${routeObj.number} (${routeObj.companyName}) 已經存在於選單中！`);
+        // Fetch & Deduplicate All Bus Routes (2合1 關鍵處)
+        async function preloadAllHkRoutes() {
+            const loaderStatus = document.getElementById('routes-loader-status');
+            
+            const cachedMaster = localStorage.getItem('hk_master_routes_cache_v2');
+            if (cachedMaster) {
+                window.allHkRoutes = JSON.parse(cachedMaster);
+                loaderStatus.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
+                loaderStatus.innerHTML = `✅ 已自動整合 ${window.allHkRoutes.length} 條路線`;
                 return;
             }
 
-            const newRoute = {
-                id: 'r_' + Date.now(),
-                ...routeObj
-            };
+            try {
+                let rawList = [];
 
-            window.routes.push(newRoute);
-            window.activeRouteId = newRoute.id;
-            saveData();
+                // KMB
+                const kmbRes = await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route/');
+                const kmbData = await kmbRes.json();
+                if (kmbData && kmbData.data) {
+                    kmbData.data.forEach(r => {
+                        rawList.push({
+                            number: r.route,
+                            company: 'kmb',
+                            companyName: '九巴/龍運',
+                            orig: r.orig_tc,
+                            dest: r.dest_tc
+                        });
+                    });
+                }
 
-            renderRoutes();
-            renderRecords();
-            switchFormMode('record');
-            document.getElementById('route-search-result').classList.add('hidden');
-        }
+                // Citybus
+                const ctbRes = await fetch('https://data.etabus.gov.hk/v1/transport/citybus-nwfb/route/ctb');
+                const ctbData = await ctbRes.json();
+                if (ctbData && ctbData.data) {
+                    ctbData.data.forEach(r => {
+                        rawList.push({
+                            number: r.route,
+                            company: 'ctb',
+                            companyName: '城巴',
+                            orig: r.orig_tc,
+                            dest: r.dest_tc
+                        });
+                    });
+                }
 
-        function handleAddRecord(e) {
-            e.preventDefault();
-            const routeId = document.getElementById('rec-route').value;
-            if (!routeId) return alert('請先選擇路線！');
+                // Deduplicate by Route Number + Company (Merge Outbound and Inbound into ONE Entry)
+                const routeMap = new Map();
+                rawList.forEach(r => {
+                    const key = `${r.company}_${r.number}`;
+                    if (!routeMap.has(key)) {
+                        routeMap.set(key, {
+                            id: key,
+                            number: r.number,
+                            company: r.company,
+                            companyName: r.companyName,
+                            terminals: [r.orig, r.dest].filter(Boolean),
+                            start: r.orig,
+                            end: r.dest
+                        });
+                    } else {
+                        const existing = routeMap.get(key);
+                        if (r.orig && !existing.terminals.includes(r.orig)) existing.terminals.push(r.orig);
+                        if (r.dest && !existing.terminals.includes(r.dest)) existing.terminals.push(r.dest);
+                    }
+                });
 
-            const newRecord = {
-                id: 'rec_' + Date.now(),
-                routeId: routeId,
-                date: document.getElementById('rec-date').value,
-                time: document.getElementById('rec-time').value,
-                direction: document.getElementById('rec-direction').value,
-                stopName: document.getElementById('rec-stop').value || '全線/一般候車',
-                scheduled: parseInt(document.getElementById('rec-sched').value) || 0,
-                actual: parseInt(document.getElementById('rec-actual').value) || 0,
-                standing: document.getElementById('rec-standing').value,
-                complaint: document.getElementById('rec-complaint').value,
-                reply: document.getElementById('rec-reply').value.trim(),
-                createdAt: Date.now()
-            };
-
-            window.records.push(newRecord);
-            window.activeRouteId = routeId;
-            saveData();
-
-            renderRecords();
-            document.getElementById('rec-reply').value = '';
-            document.getElementById('rec-actual').value = '';
-        }
-
-        function renderRoutes() {
-            const tabsContainer = document.getElementById('route-tabs');
-            const selectRoute = document.getElementById('rec-route');
-
-            tabsContainer.innerHTML = '';
-            selectRoute.innerHTML = '<option value="">-- 請選擇路線 --</option>';
-
-            window.routes.forEach(route => {
-                const opt = document.createElement('option');
-                opt.value = route.id;
-                opt.textContent = `[${route.companyName || '巴士'}] 路線 ${route.number} (${route.start} ↔ ${route.end})`;
-                selectRoute.appendChild(opt);
-
-                const btn = document.createElement('button');
-                btn.onclick = () => {
-                    window.activeRouteId = route.id;
-                    renderRoutes();
-                    renderRecords();
-                };
+                window.allHkRoutes = Array.from(routeMap.values()).map(r => {
+                    return {
+                        ...r,
+                        start: r.terminals[0] || '起始站',
+                        end: r.terminals[1] || r.terminals[0] || '終點站'
+                    };
+                }).sort((a,b) => a.number.localeCompare(b.number, 'en', {numeric: true}));
                 
-                const isActive = route.id === window.activeRouteId;
-                btn.className = `pb-3 px-2 text-sm font-medium whitespace-nowrap flex items-center gap-1.5 transition ${isActive ? 'active-tab' : 'text-slate-500 hover:text-slate-800'}`;
-                btn.innerHTML = `<span>${route.number} <span class="text-xs font-normal opacity-75">(${route.companyName || ''})</span></span>`;
-                tabsContainer.appendChild(btn);
-            });
+                localStorage.setItem('hk_master_routes_cache_v2', JSON.stringify(window.allHkRoutes));
 
-            if (window.activeRouteId) {
-                selectRoute.value = window.activeRouteId;
-                onSelectRouteChanged();
+                loaderStatus.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
+                loaderStatus.innerHTML = `✅ 已自動整合 ${window.allHkRoutes.length} 條路線`;
+            } catch (err) {
+                console.error("Master routes loading failed:", err);
+                loaderStatus.className = "bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-semibold";
+                loaderStatus.innerHTML = `⚠️ 路線載入完成`;
             }
         }
 
+        function renderRouteDropdown(filterKeyword = '') {
+            const selectRoute = document.getElementById('rec-route');
+            selectRoute.innerHTML = '';
+
+            const searchKey = filterKeyword.trim().toUpperCase();
+            
+            const filtered = window.allHkRoutes.filter(r => {
+                if (!searchKey) return true;
+                return r.number.toUpperCase().includes(searchKey) || 
+                       r.start.includes(searchKey) || 
+                       r.end.includes(searchKey) ||
+                       r.companyName.includes(searchKey);
+            });
+
+            if (filtered.length === 0) {
+                selectRoute.innerHTML = '<option value="">找不到符合條件的路線</option>';
+                return;
+            }
+
+            filtered.slice(0, 200).forEach(route => {
+                const opt = document.createElement('option');
+                opt.value = route.id;
+                opt.textContent = `[${route.companyName}] 路線 ${route.number} (${route.start} ↔ ${route.end})`;
+                selectRoute.appendChild(opt);
+            });
+
+            if (window.activeRouteNumber) {
+                const matched = window.allHkRoutes.find(r => r.number === window.activeRouteNumber);
+                if (matched) selectRoute.value = matched.id;
+            }
+        }
+
+        function filterRouteOptions() {
+            const keyword = document.getElementById('route-search-input').value;
+            renderRouteDropdown(keyword);
+        }
+
         function onSelectRouteChanged() {
+            const routeId = document.getElementById('rec-route').value;
+            if (!routeId) return;
+
+            const routeObj = window.allHkRoutes.find(r => r.id === routeId);
+            if (routeObj) {
+                window.activeRouteNumber = routeObj.number;
+                if (!window.activeTabs.some(t => t.number === routeObj.number)) {
+                    window.activeTabs.push(routeObj);
+                }
+            }
+
+            saveData();
+            renderRouteTabs();
             updateDirectionOptions();
             loadStopsForRecord();
+            renderRecords();
+        }
+
+        // Count delay records per route and sort tabs so MAX DELAY IS FIRST
+        function renderRouteTabs() {
+            const tabsContainer = document.getElementById('route-tabs');
+            tabsContainer.innerHTML = '';
+
+            if (window.activeTabs.length === 0 && window.allHkRoutes.length > 0) {
+                window.activeTabs.push(window.allHkRoutes[0]);
+                window.activeRouteNumber = window.allHkRoutes[0].number;
+            }
+
+            // Calculate delay incident count for each tab route
+            const delayCounts = {};
+            window.records.forEach(rec => {
+                if ((rec.actual - rec.scheduled) > 0) {
+                    delayCounts[rec.routeNumber] = (delayCounts[rec.routeNumber] || 0) + 1;
+                }
+            });
+
+            // Sort Active Tabs: Most delay records FIRST
+            window.activeTabs.sort((a,b) => {
+                const countA = delayCounts[a.number] || 0;
+                const countB = delayCounts[b.number] || 0;
+                return countB - countA;
+            });
+
+            window.activeTabs.forEach(route => {
+                const delays = delayCounts[route.number] || 0;
+                const btn = document.createElement('button');
+                btn.onclick = () => {
+                    window.activeRouteNumber = route.number;
+                    saveData();
+                    renderRouteTabs();
+                    renderRecords();
+                };
+                
+                const isActive = route.number === window.activeRouteNumber;
+                btn.className = `pb-2 px-3 text-xs md:text-sm font-medium whitespace-nowrap flex items-center gap-1.5 rounded-t-lg transition ${isActive ? 'active-tab' : 'text-slate-500 hover:text-slate-800'}`;
+                btn.innerHTML = `
+                    <span>${route.number} <span class="text-[11px] font-normal opacity-75">(${route.companyName || ''})</span></span>
+                    ${delays > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold" title="${delays} 次脫班紀錄">${delays}</span>` : ''}
+                `;
+                tabsContainer.appendChild(btn);
+            });
         }
 
         function updateDirectionOptions() {
             const routeId = document.getElementById('rec-route').value;
+            const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
             const dirSelect = document.getElementById('rec-direction');
             dirSelect.innerHTML = '';
 
-            const route = window.routes.find(r => r.id === routeId);
             if (!route) {
                 dirSelect.innerHTML = '<option value="">-- 請先選擇路線 --</option>';
                 return;
@@ -517,10 +541,10 @@
 
         async function loadStopsForRecord() {
             const routeId = document.getElementById('rec-route').value;
+            const route = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
             const stopSelect = document.getElementById('rec-stop');
             stopSelect.innerHTML = '<option value="全線/一般候車">全線/一般候車</option>';
 
-            const route = window.routes.find(r => r.id === routeId);
             if (!route) return;
 
             try {
@@ -549,6 +573,44 @@
             }
         }
 
+        function handleAddRecord(e) {
+            e.preventDefault();
+            const routeId = document.getElementById('rec-route').value;
+            const routeObj = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            if (!routeObj) return alert('請先選擇路線！');
+
+            const newRecord = {
+                id: 'rec_' + Date.now(),
+                routeNumber: routeObj.number,
+                companyName: routeObj.companyName,
+                date: document.getElementById('rec-date').value,
+                time: document.getElementById('rec-time').value,
+                direction: document.getElementById('rec-direction').value,
+                stopName: document.getElementById('rec-stop').value || '全線/一般候車',
+                scheduled: parseInt(document.getElementById('rec-sched').value) || 0,
+                actual: parseInt(document.getElementById('rec-actual').value) || 0,
+                standing: document.getElementById('rec-standing').value,
+                complaint: document.getElementById('rec-complaint').value,
+                reply: document.getElementById('rec-reply').value.trim(),
+                username: window.currentUser ? window.currentUser.username : '熱心市民',
+                createdAt: Date.now()
+            };
+
+            window.records.push(newRecord);
+            window.activeRouteNumber = routeObj.number;
+
+            if (!window.activeTabs.some(t => t.number === routeObj.number)) {
+                window.activeTabs.push(routeObj);
+            }
+
+            saveData();
+            renderRouteTabs(); // Automatically re-sorts tabs by delay count
+            renderRecords();
+
+            document.getElementById('rec-reply').value = '';
+            document.getElementById('rec-actual').value = '';
+        }
+
         function renderRecords() {
             const tbody = document.getElementById('records-tbody');
             const emptyState = document.getElementById('empty-state');
@@ -556,16 +618,16 @@
             
             tbody.innerHTML = '';
 
-            const activeRoute = window.routes.find(r => r.id === window.activeRouteId);
+            const activeRoute = window.allHkRoutes.find(r => r.number === window.activeRouteNumber) || window.activeTabs[0];
             if (!activeRoute) {
-                infoDisplay.innerHTML = '請先建立或載入路線';
+                infoDisplay.innerHTML = '請在左側搜尋並選擇路線';
                 emptyState.classList.remove('hidden');
                 return;
             }
 
             infoDisplay.innerHTML = `<span class="bg-sky-100 text-sky-800 px-2 py-0.5 rounded text-xs mr-2 font-bold">${activeRoute.number} (${activeRoute.companyName || '巴士'})</span> ${activeRoute.start} ↔ ${activeRoute.end}`;
 
-            const filteredRecords = window.records.filter(r => r.routeId === window.activeRouteId)
+            const filteredRecords = window.records.filter(r => r.routeNumber === activeRoute.number)
                                            .sort((a,b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
 
             if (filteredRecords.length === 0) {
@@ -607,8 +669,8 @@
 
                 tr.innerHTML = `
                     <td class="p-2.5 whitespace-nowrap">
-                        <div class="font-medium text-slate-900">${rec.date}</div>
-                        <div class="text-xs text-slate-500">${rec.time}</div>
+                        <div class="font-medium text-slate-900">${rec.date} ${rec.time}</div>
+                        <div class="text-[11px] text-sky-700 font-semibold">👤 錄入者：${rec.username || '熱心市民'}</div>
                     </td>
                     <td class="p-2.5 text-xs text-slate-700">
                         <div class="font-medium text-slate-800">${rec.direction}</div>
@@ -638,11 +700,9 @@
             const rec = window.records.find(r => r.id === recId);
             if (!rec) return;
 
-            const route = window.routes.find(r => r.id === rec.routeId) || { number: '未知', start: '', end: '' };
-
             document.getElementById('edit-rec-id').value = rec.id;
-            document.getElementById('edit-info-route').textContent = `[${route.companyName || '巴士'}] 路線 ${route.number} (${rec.direction}) @ ${rec.stopName || '一般候車'}`;
-            document.getElementById('edit-info-time').textContent = `${rec.date} ${rec.time}`;
+            document.getElementById('edit-info-route').textContent = `[${rec.companyName || '巴士'}] 路線 ${rec.routeNumber} (${rec.direction}) @ ${rec.stopName || '一般候車'}`;
+            document.getElementById('edit-info-time').textContent = `${rec.date} ${rec.time} (錄入者: ${rec.username || '熱心市民'})`;
 
             document.getElementById('edit-sched').value = rec.scheduled;
             document.getElementById('edit-actual').value = rec.actual;
@@ -670,6 +730,7 @@
             window.records[recIndex].reply = document.getElementById('edit-reply').value.trim();
 
             saveData();
+            renderRouteTabs(); // Re-sort tabs in case delay counts changed
             renderRecords();
             closeEditModal();
         }
@@ -678,15 +739,17 @@
             if (confirm('確定要刪除這筆紀錄嗎？')) {
                 window.records = window.records.filter(r => r.id !== recId);
                 saveData();
+                renderRouteTabs();
                 renderRecords();
             }
         }
 
-        // Export/Import JSON Backup
+        // Backup / Restore
         function exportJSON() {
             const backupObj = {
-                routes: window.routes,
+                activeTabs: window.activeTabs,
                 records: window.records,
+                user: window.currentUser,
                 exportedAt: new Date().toISOString()
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
@@ -703,11 +766,13 @@
             fileReader.onload = function(e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    if (parsed.routes && parsed.records) {
-                        window.routes = parsed.routes;
-                        window.records = parsed.records;
+                    if (parsed.records) {
+                        window.activeTabs = parsed.activeTabs || [];
+                        window.records = parsed.records || [];
+                        if (parsed.user) window.currentUser = parsed.user;
                         saveData();
-                        renderRoutes();
+                        updateUserBar();
+                        renderRouteTabs();
                         renderRecords();
                         alert('成功匯入數據！');
                     } else {
@@ -727,9 +792,8 @@
             let fileName = '全港巴士脫班統計表_全紀錄.csv';
 
             if (scope === 'active') {
-                const activeRoute = window.routes.find(r => r.id === window.activeRouteId);
-                targetRecords = window.records.filter(r => r.routeId === window.activeRouteId);
-                fileName = `巴士脫班統計表_路線${activeRoute ? activeRoute.number : ''}.csv`;
+                targetRecords = window.records.filter(r => r.routeNumber === window.activeRouteNumber);
+                fileName = `巴士脫班統計表_路線${window.activeRouteNumber || ''}.csv`;
             } else {
                 targetRecords = [...window.records];
             }
@@ -739,16 +803,13 @@
                 return;
             }
 
-            const header = ['營辦商', '路線', '起點', '終點', '日期', '時間', '方向', '候車車站', '原定班次(分鐘)', '實際班次(分鐘)', '脫班延誤(分鐘)', '是否有企人', '交通投訴組跟進', '回覆/備註'];
+            const header = ['營辦商', '路線號碼', '日期', '時間', '方向', '候車車站', '原定班次(分鐘)', '實際班次(分鐘)', '脫班延誤(分鐘)', '是否有企人', '交通投訴組跟進', '回覆/備註', '錄入者'];
             
             const rows = targetRecords.map(rec => {
-                const r = window.routes.find(rt => rt.id === rec.routeId) || { number: '未知', companyName: '', start: '', end: '' };
                 const delay = rec.actual - rec.scheduled;
                 return [
-                    `"${r.companyName || '巴士'}"`,
-                    `"${r.number}"`,
-                    `"${r.start}"`,
-                    `"${r.end}"`,
+                    `"${rec.companyName || '巴士'}"`,
+                    `"${rec.routeNumber}"`,
                     `"${rec.date}"`,
                     `"${rec.time}"`,
                     `"${rec.direction}"`,
@@ -758,7 +819,8 @@
                     delay,
                     `"${rec.standing}"`,
                     `"${rec.complaint}"`,
-                    `"${(rec.reply || '').replace(/"/g, '""')}"`
+                    `"${(rec.reply || '').replace(/"/g, '""')}"`,
+                    `"${rec.username || '熱心市民'}"`
                 ];
             });
 
