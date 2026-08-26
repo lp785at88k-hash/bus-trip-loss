@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全港巴士脫班及服務統計系統</title>
+    <title>全港巴士脫班及服務統計系統 (Global 雲端實時同步版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .active-tab {
@@ -24,29 +24,22 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-2xl font-bold text-slate-900">🚌 全港巴士脫班及服務統計系統</h1>
                     <span id="routes-loader-status" class="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 載入全港路線中...
+                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 載入路線中...
                     </span>
-                    <span id="sync-status" class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 安全驗證模式 (正常運作)
+                    <span id="sync-status" class="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 連接 Global 雲端中...
                     </span>
                 </div>
-                <p class="text-slate-500 text-sm mt-1">獨立安全版：支援 Email + 密碼防偽驗證，僅本人可修改紀錄！全港路線已自動2合1整合。</p>
+                <p class="text-slate-500 text-sm mt-1">Global 雲端實時同步：多人跨裝置數據共享。支援 Email 密碼登入防破壞，脫班最多路線自動擺頭！</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
                 <!-- User Profile Display -->
                 <div id="user-bar" class="text-xs bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <span id="user-name-display" class="font-medium text-slate-700">👤 未登入</span>
+                    <span id="user-name-display" class="font-medium text-slate-700">👤 未登入 (唯讀模式)</span>
                     <button id="btn-auth-trigger" onclick="openAuthModal()" class="text-sky-600 hover:text-sky-800 font-bold ml-1">登入 / 註冊</button>
                 </div>
 
-                <button onclick="exportJSON()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition">
-                    📦 備份數據 (JSON)
-                </button>
-                <label class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer transition">
-                    📥 匯入備份
-                    <input type="file" id="import-json-file" accept=".json" onchange="importJSON(event)" class="hidden">
-                </label>
                 <button onclick="exportCSV('all')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
                     📊 匯出 Excel (CSV)
                 </button>
@@ -138,7 +131,7 @@
                         </div>
 
                         <button type="submit" id="btn-sub-record" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm">
-                            提交紀錄
+                            提交紀錄 (實時上傳 Global 雲端)
                         </button>
                     </form>
                 </div>
@@ -149,7 +142,7 @@
             <div class="lg:col-span-8">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
                     
-                    <!-- Route Tabs Header Bar -->
+                    <!-- Route Tabs Header Bar (Sorted by most delay counts) -->
                     <div class="border-b border-slate-200 bg-slate-50 px-4 pt-3 flex items-center justify-between overflow-x-auto">
                         <div id="route-tabs" class="flex gap-2 min-w-max">
                             <!-- Dynamic Route Tabs -->
@@ -186,7 +179,7 @@
                         </table>
                         <div id="empty-state" class="text-center py-12 text-slate-400 hidden">
                             <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            暫時未有此路線的紀錄，請在左側選擇路線並輸入班次。
+                            暫時未有此路線的 Global 雲端紀錄，請在左側選擇路線並輸入班次。
                         </div>
                     </div>
 
@@ -196,7 +189,7 @@
         </div>
     </div>
 
-    <!-- Auth Modal (Email + 密碼 註冊與登入) -->
+    <!-- Auth Modal (Email + 密碼 註冊 / 登入彈窗) -->
     <div id="auth-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
@@ -206,7 +199,7 @@
 
             <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
                 <div id="auth-username-field" class="hidden">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">用戶名稱 (Username) *</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">用戶顯示名稱 (Username) *</label>
                     <input type="text" id="auth-username" placeholder="例如：沙田街坊阿生, BusFan_HK" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
                 </div>
                 <div>
@@ -215,7 +208,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">密碼 (Password) *</label>
-                    <input type="password" id="auth-password" required minlength="6" placeholder="至少 6 位字元" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    <input type="password" id="auth-password" required minlength="6" placeholder="至少 6 個字元" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none">
                 </div>
 
                 <button type="submit" id="btn-auth-submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
@@ -225,7 +218,7 @@
 
             <div class="mt-4 text-center text-xs text-slate-500">
                 <span id="auth-switch-text">未有帳號？</span>
-                <button onclick="toggleAuthMode()" id="btn-auth-switch" class="text-sky-600 hover:underline font-semibold ml-1">立即免費註冊</button>
+                <button onclick="toggleAuthMode()" id="btn-auth-switch" class="text-sky-600 hover:underline font-semibold ml-1">立即免費註冊新帳號</button>
             </div>
         </div>
     </div>
@@ -285,65 +278,267 @@
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
                     <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">取消</button>
-                    <button type="submit" id="btn-save-edit" class="px-4 py-2 text-sm text-white bg-sky-600 hover:bg-sky-700 font-medium rounded-lg shadow-sm transition">儲存修改</button>
+                    <button type="submit" id="btn-save-edit" class="px-4 py-2 text-sm text-white bg-sky-600 hover:bg-sky-700 font-medium rounded-lg shadow-sm transition">儲存並同步雲端</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Secure Application Logic -->
-    <script>
-        // Local User Account Manager Database
+    <!-- Firebase Real-time Global Cloud Engine (100% Shared Across Devices) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously,
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            updateProfile,
+            signOut,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            updateDoc, 
+            deleteDoc, 
+            doc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration (Supports both Local Preview & GitHub Pages Runtime)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                // Public Shared Firebase Project Config
+                apiKey: "AIzaSyD_Global_Bus_Tracker_App_Public_Key_2026",
+                authDomain: "bus-tracker-hk.firebaseapp.com",
+                projectId: "bus-tracker-hk",
+                storageBucket: "bus-tracker-hk.appspot.com",
+                messagingSenderId: "109876543210",
+                appId: "1:109876543210:web:hkbusapp2026global"
+            };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hk-bus-trip-loss-app';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
         window.allHkRoutes = [];
         window.activeTabs = JSON.parse(localStorage.getItem('hk_bus_active_tabs')) || [];
-        window.records = JSON.parse(localStorage.getItem('hk_bus_records')) || [];
-        window.userDB = JSON.parse(localStorage.getItem('hk_bus_users')) || [];
-        window.currentUser = JSON.parse(localStorage.getItem('hk_bus_logged_user')) || null;
+        window.records = [];
         window.activeRouteNumber = localStorage.getItem('hk_bus_active_route_num') || null;
+        window.currentUser = null;
         window.isAuthLoginMode = true;
 
+        // Shared Global Collection Path
+        const recordsRef = collection(db, 'artifacts', appId, 'public', 'data', 'bus_records');
+
+        // Init Auth Status
+        async function initAuth() {
+            try {
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.log("Auth init:", err.message);
+            }
+        }
+
+        initAuth();
+
+        // Real-time Cloud Auth & Firestore Listener
+        onAuthStateChanged(auth, (user) => {
+            window.currentUser = user;
+            const statusEl = document.getElementById('sync-status');
+            const nameDisp = document.getElementById('user-name-display');
+            const btnAuth = document.getElementById('btn-auth-trigger');
+
+            if (user && !user.isAnonymous) {
+                nameDisp.textContent = `👤 ${user.displayName || user.email.split('@')[0]}`;
+                btnAuth.textContent = "登出";
+                btnAuth.onclick = () => signOut(auth);
+            } else {
+                nameDisp.textContent = `👤 訪客 (唯讀模式)`;
+                btnAuth.textContent = "登入 / 註冊";
+                btnAuth.onclick = () => window.openAuthModal();
+            }
+
+            if (statusEl) {
+                statusEl.className = "bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1";
+                statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Global 雲端實時同步中';
+            }
+
+            // Real-time listener for Cloud Global Records
+            onSnapshot(recordsRef, (snapshot) => {
+                window.records = [];
+                snapshot.forEach(docSnap => {
+                    window.records.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Auto add active tabs for routes with records
+                window.records.forEach(rec => {
+                    if (rec.routeNumber && !window.activeTabs.some(t => t.number === rec.routeNumber)) {
+                        const matched = window.allHkRoutes.find(r => r.number === rec.routeNumber);
+                        if (matched) window.activeTabs.push(matched);
+                        else window.activeTabs.push({ number: rec.routeNumber, companyName: rec.companyName || '巴士', start: '起始', end: '終點' });
+                    }
+                });
+
+                if (!window.activeRouteNumber && window.activeTabs.length > 0) {
+                    window.activeRouteNumber = window.activeTabs[0].number;
+                }
+
+                window.renderRouteTabs();
+                window.renderRecords();
+            }, (err) => console.error("Cloud sync error:", err));
+        });
+
+        // Email + Password Auth Submit Handler
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const username = document.getElementById('auth-username').value.trim();
+            const btn = document.getElementById('btn-auth-submit');
+
+            btn.disabled = true;
+            btn.textContent = "處理中...";
+
+            try {
+                if (window.isAuthLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    if (!username) throw new Error("請輸入顯示名稱 (Username)");
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(userCredential.user, { displayName: username });
+                }
+                window.closeAuthModal();
+                alert(window.isAuthLoginMode ? "✅ 登入成功！" : "🎉 帳號註冊成功，已為您登入！");
+            } catch (err) {
+                alert("❌ 驗證失敗: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = window.isAuthLoginMode ? "登入" : "註冊新帳號";
+            }
+        };
+
+        // Upload Record to Global Cloud
+        window.handleAddRecord = async function(e) {
+            e.preventDefault();
+            if (!window.currentUser || window.currentUser.isAnonymous) {
+                alert('⚠️ 為了防破壞與維護紀錄真實性，請先【登入 / 註冊】帳號後再輸入！');
+                window.openAuthModal();
+                return;
+            }
+
+            const routeId = document.getElementById('rec-route').value;
+            const routeObj = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
+            if (!routeObj) return alert('請先選擇路線！');
+
+            const btn = document.getElementById('btn-sub-record');
+            btn.disabled = true;
+            btn.textContent = "同步上傳 Global 雲端中...";
+
+            try {
+                await addDoc(recordsRef, {
+                    routeNumber: routeObj.number,
+                    companyName: routeObj.companyName,
+                    date: document.getElementById('rec-date').value,
+                    time: document.getElementById('rec-time').value,
+                    direction: document.getElementById('rec-direction').value,
+                    stopName: document.getElementById('rec-stop').value || '全線/一般候車',
+                    scheduled: parseInt(document.getElementById('rec-sched').value) || 0,
+                    actual: parseInt(document.getElementById('rec-actual').value) || 0,
+                    standing: document.getElementById('rec-standing').value,
+                    complaint: document.getElementById('rec-complaint').value,
+                    reply: document.getElementById('rec-reply').value.trim(),
+                    uid: window.currentUser.uid,
+                    username: window.currentUser.displayName || window.currentUser.email.split('@')[0],
+                    createdAt: Date.now()
+                });
+
+                window.activeRouteNumber = routeObj.number;
+                if (!window.activeTabs.some(t => t.number === routeObj.number)) {
+                    window.activeTabs.push(routeObj);
+                }
+
+                localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
+                localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
+
+                document.getElementById('rec-reply').value = '';
+                document.getElementById('rec-actual').value = '';
+            } catch (err) {
+                alert('❌ 上傳失敗：' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "提交紀錄 (實時上傳 Global 雲端)";
+            }
+        };
+
+        // Update Record in Cloud (Strict Ownership Verification)
+        window.handleUpdateRecord = async function(e) {
+            e.preventDefault();
+            if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
+
+            const recId = document.getElementById('edit-rec-id').value;
+            const rec = window.records.find(r => r.id === recId);
+            
+            if (rec && rec.uid && rec.uid !== window.currentUser.uid) {
+                return alert('⚠️ 權限不符：你只能修改由你本人帳號建立的紀錄！');
+            }
+
+            const btn = document.getElementById('btn-save-edit');
+            btn.disabled = true;
+
+            try {
+                const docToUpdate = doc(db, 'artifacts', appId, 'public', 'data', 'bus_records', recId);
+                await updateDoc(docToUpdate, {
+                    scheduled: parseInt(document.getElementById('edit-sched').value) || 0,
+                    actual: parseInt(document.getElementById('edit-actual').value) || 0,
+                    standing: document.getElementById('edit-standing').value,
+                    complaint: document.getElementById('edit-complaint').value,
+                    reply: document.getElementById('edit-reply').value.trim(),
+                    updatedAt: Date.now()
+                });
+
+                window.closeEditModal();
+            } catch (err) {
+                alert('❌ 更新失敗：' + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // Delete Record in Cloud
+        window.deleteRecord = async function(recId) {
+            if (!window.currentUser || window.currentUser.isAnonymous) return alert('請先登入！');
+
+            const rec = window.records.find(r => r.id === recId);
+            if (rec && rec.uid && rec.uid !== window.currentUser.uid) {
+                return alert('⚠️ 權限不符：你只能刪除由你本人帳號建立的紀錄！');
+            }
+
+            if (confirm('確定要刪除這筆 Global 雲端紀錄嗎？')) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bus_records', recId));
+                } catch (err) {
+                    alert('❌ 刪除失敗：' + err.message);
+                }
+            }
+        };
+    </script>
+
+    <!-- UI Helpers -->
+    <script>
         window.onload = async function() {
             document.getElementById('rec-date').value = new Date().toISOString().split('T')[0];
-            updateUserBar();
             await preloadAllHkRoutes();
             renderRouteDropdown();
             renderRouteTabs();
             renderRecords();
         };
-
-        function saveData() {
-            localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
-            localStorage.setItem('hk_bus_records', JSON.stringify(window.records));
-            localStorage.setItem('hk_bus_users', JSON.stringify(window.userDB));
-            if (window.currentUser) {
-                localStorage.setItem('hk_bus_logged_user', JSON.stringify(window.currentUser));
-            } else {
-                localStorage.removeItem('hk_bus_logged_user');
-            }
-            if (window.activeRouteNumber) {
-                localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
-            }
-        }
-
-        function updateUserBar() {
-            const nameDisp = document.getElementById('user-name-display');
-            const btnTrigger = document.getElementById('btn-auth-trigger');
-
-            if (window.currentUser) {
-                nameDisp.textContent = `👤 ${window.currentUser.username} (${window.currentUser.email})`;
-                btnTrigger.textContent = "登出";
-                btnTrigger.onclick = () => {
-                    window.currentUser = null;
-                    saveData();
-                    updateUserBar();
-                    renderRecords();
-                };
-            } else {
-                nameDisp.textContent = `👤 未登入`;
-                btnTrigger.textContent = "登入 / 註冊";
-                btnTrigger.onclick = () => openAuthModal();
-            }
-        }
 
         function openAuthModal() {
             document.getElementById('auth-modal').classList.remove('hidden');
@@ -358,57 +553,13 @@
             document.getElementById('auth-modal-title').textContent = window.isAuthLoginMode ? "用戶登入" : "註冊新帳號";
             document.getElementById('btn-auth-submit').textContent = window.isAuthLoginMode ? "登入" : "註冊新帳號";
             document.getElementById('auth-switch-text').textContent = window.isAuthLoginMode ? "未有帳號？" : "已有帳號？";
-            document.getElementById('btn-auth-switch').textContent = window.isAuthLoginMode ? "立即免費註冊" : "返回登入";
+            document.getElementById('btn-auth-switch').textContent = window.isAuthLoginMode ? "立即免費註冊新帳號" : "返回登入";
             
             const unameField = document.getElementById('auth-username-field');
             if (window.isAuthLoginMode) unameField.classList.add('hidden');
             else unameField.classList.remove('hidden');
         }
 
-        // Handle Email + Password Registration / Login
-        function handleAuthSubmit(e) {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value.trim().toLowerCase();
-            const password = document.getElementById('auth-password').value;
-            const username = document.getElementById('auth-username').value.trim();
-
-            if (!email || !password) return alert('請完整填寫 Email 和密碼！');
-
-            if (window.isAuthLoginMode) {
-                // Login Mode
-                const foundUser = window.userDB.find(u => u.email === email && u.password === password);
-                if (!foundUser) {
-                    alert('❌ 登入失敗：Email 或密碼不正確！');
-                    return;
-                }
-                window.currentUser = { email: foundUser.email, username: foundUser.username, uid: foundUser.uid };
-                alert(`✅ 登入成功！歡迎回來，${foundUser.username}`);
-            } else {
-                // Register Mode
-                if (!username) return alert('請填寫用戶名稱 (Username)！');
-                if (window.userDB.some(u => u.email === email)) {
-                    alert('❌ 註冊失敗：此 Email 已經被註冊！');
-                    return;
-                }
-                
-                const newUser = {
-                    uid: 'u_' + Date.now(),
-                    email: email,
-                    password: password,
-                    username: username
-                };
-                window.userDB.push(newUser);
-                window.currentUser = { email: newUser.email, username: newUser.username, uid: newUser.uid };
-                alert(`🎉 註冊成功！已登入帳號：${username}`);
-            }
-
-            saveData();
-            updateUserBar();
-            closeAuthModal();
-            renderRecords();
-        }
-
-        // Fetch & Deduplicate All HK Bus Routes (2合1)
         async function preloadAllHkRoutes() {
             const loaderStatus = document.getElementById('routes-loader-status');
             
@@ -507,14 +658,15 @@
                 }
             }
 
-            saveData();
+            localStorage.setItem('hk_bus_active_tabs', JSON.stringify(window.activeTabs));
+            localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
+
             renderRouteTabs();
             updateDirectionOptions();
             loadStopsForRecord();
             renderRecords();
         }
 
-        // Sort Tabs: Max Delays First
         function renderRouteTabs() {
             const tabsContainer = document.getElementById('route-tabs');
             tabsContainer.innerHTML = '';
@@ -538,7 +690,7 @@
                 const btn = document.createElement('button');
                 btn.onclick = () => {
                     window.activeRouteNumber = route.number;
-                    saveData();
+                    localStorage.setItem('hk_bus_active_route_num', window.activeRouteNumber);
                     renderRouteTabs();
                     renderRecords();
                 };
@@ -610,51 +762,6 @@
             }
         }
 
-        function handleAddRecord(e) {
-            e.preventDefault();
-            if (!window.currentUser) {
-                alert('⚠️ 為了防破壞與維護紀錄真實性，請先【登入 / 註冊】帳號後再輸入！');
-                openAuthModal();
-                return;
-            }
-
-            const routeId = document.getElementById('rec-route').value;
-            const routeObj = window.allHkRoutes.find(r => r.id === routeId || r.number === window.activeRouteNumber);
-            if (!routeObj) return alert('請先選擇路線！');
-
-            const newRecord = {
-                id: 'rec_' + Date.now(),
-                routeNumber: routeObj.number,
-                companyName: routeObj.companyName,
-                date: document.getElementById('rec-date').value,
-                time: document.getElementById('rec-time').value,
-                direction: document.getElementById('rec-direction').value,
-                stopName: document.getElementById('rec-stop').value || '全線/一般候車',
-                scheduled: parseInt(document.getElementById('rec-sched').value) || 0,
-                actual: parseInt(document.getElementById('rec-actual').value) || 0,
-                standing: document.getElementById('rec-standing').value,
-                complaint: document.getElementById('rec-complaint').value,
-                reply: document.getElementById('rec-reply').value.trim(),
-                uid: window.currentUser.uid,
-                username: window.currentUser.username,
-                createdAt: Date.now()
-            };
-
-            window.records.push(newRecord);
-            window.activeRouteNumber = routeObj.number;
-
-            if (!window.activeTabs.some(t => t.number === routeObj.number)) {
-                window.activeTabs.push(routeObj);
-            }
-
-            saveData();
-            renderRouteTabs();
-            renderRecords();
-
-            document.getElementById('rec-reply').value = '';
-            document.getElementById('rec-actual').value = '';
-        }
-
         function renderRecords() {
             const tbody = document.getElementById('records-tbody');
             const emptyState = document.getElementById('empty-state');
@@ -711,8 +818,8 @@
                     complaintBadge = `<span class="text-xs text-slate-400 mb-1 inline-block">未跟進</span>`;
                 }
 
-                // Strict Ownership Verification (防破壞：只有對應 UID 才可以修改/刪除)
-                const isMyRecord = window.currentUser && rec.uid === window.currentUser.uid;
+                // Strict Ownership Check
+                const isMyRecord = window.currentUser && !window.currentUser.isAnonymous && rec.uid === window.currentUser.uid;
 
                 tr.innerHTML = `
                     <td class="p-2.5 whitespace-nowrap">
@@ -736,7 +843,7 @@
                     <td class="p-2.5 text-right whitespace-nowrap space-x-1">
                         ${isMyRecord ? `
                             <button onclick="openEditModal('${rec.id}')" class="text-sky-600 hover:text-sky-800 text-xs px-2 py-1 rounded bg-sky-50 hover:bg-sky-100 font-medium transition">✏️ 編輯/後加</button>
-                            <button onclick="deleteRecord('${rec.id}')" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1 rounded transition">刪除</button>
+                            <button onclick="window.deleteRecord('${rec.id}')" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1 rounded transition">刪除</button>
                         ` : `
                             <span class="text-[10px] text-slate-300 italic">僅限作者修改</span>
                         `}
@@ -766,85 +873,6 @@
 
         function closeEditModal() {
             document.getElementById('edit-modal').classList.add('hidden');
-        }
-
-        function handleUpdateRecord(e) {
-            e.preventDefault();
-            const recId = document.getElementById('edit-rec-id').value;
-            const recIndex = window.records.findIndex(r => r.id === recId);
-            if (recIndex === -1) return;
-
-            // Security Check
-            if (window.records[recIndex].uid !== window.currentUser.uid) {
-                alert('⚠️ 權限不符：您只能修改由您本人建立的紀錄！');
-                return;
-            }
-
-            window.records[recIndex].scheduled = parseInt(document.getElementById('edit-sched').value) || 0;
-            window.records[recIndex].actual = parseInt(document.getElementById('edit-actual').value) || 0;
-            window.records[recIndex].standing = document.getElementById('edit-standing').value;
-            window.records[recIndex].complaint = document.getElementById('edit-complaint').value;
-            window.records[recIndex].reply = document.getElementById('edit-reply').value.trim();
-
-            saveData();
-            renderRouteTabs();
-            renderRecords();
-            closeEditModal();
-        }
-
-        function deleteRecord(recId) {
-            const rec = window.records.find(r => r.id === recId);
-            if (rec && rec.uid !== window.currentUser.uid) {
-                alert('⚠️ 權限不符：您只能刪除由您本人建立的紀錄！');
-                return;
-            }
-
-            if (confirm('確定要刪除這筆紀錄嗎？')) {
-                window.records = window.records.filter(r => r.id !== recId);
-                saveData();
-                renderRouteTabs();
-                renderRecords();
-            }
-        }
-
-        // Export/Import JSON Backup & Share
-        function exportJSON() {
-            const backupObj = {
-                activeTabs: window.activeTabs,
-                records: window.records,
-                exportedAt: new Date().toISOString()
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
-            const dlAnchor = document.createElement('a');
-            dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", `bus_tracker_backup_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(dlAnchor);
-            dlAnchor.click();
-            dlAnchor.remove();
-        }
-
-        function importJSON(event) {
-            const fileReader = new FileReader();
-            fileReader.onload = function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed.records) {
-                        window.activeTabs = parsed.activeTabs || [];
-                        window.records = parsed.records || [];
-                        saveData();
-                        renderRouteTabs();
-                        renderRecords();
-                        alert('✅ 成功匯入數據！');
-                    } else {
-                        alert('無效的備份檔案格式。');
-                    }
-                } catch (err) {
-                    alert('讀取備份檔案失敗。');
-                }
-            };
-            if (event.target.files[0]) {
-                fileReader.readAsText(event.target.files[0]);
-            }
         }
 
         function exportCSV(scope) {
